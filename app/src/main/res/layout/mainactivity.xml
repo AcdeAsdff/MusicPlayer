@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/miku"
+    android:id="@+id/MainActivity">
+
+    <TextView
+        android:background="@color/teal_700"
+        android:id="@+id/playerTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="30sp"
+        android:text="@string/mainactivity_title"
+        android:textColor="@color/black"
+        app:layout_constraintTop_toTopOf="@id/MainActivity"
+        app:layout_constraintLeft_toLeftOf="@id/MainActivity">
+    </TextView>
+    <android.widget.Button
+        android:textColor="@color/black"
+        android:background="@drawable/button_bg"
+        android:id="@+id/addFolder"
+        android:layout_height="40sp"
+        android:layout_width="40sp"
+        android:textSize="30sp"
+        android:text="@string/addFolder"
+        android:textAlignment="center"
+        app:layout_constraintTop_toTopOf="@id/playerTitle"
+        app:layout_constraintRight_toRightOf="@id/playerTitle" />
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/playFolders"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/playerTitle"
+        app:layout_constraintLeft_toLeftOf="@id/MainActivity">
+    </androidx.recyclerview.widget.RecyclerView>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

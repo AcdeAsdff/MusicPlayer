@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/miku"
+    android:id="@+id/player_activity">
+
+    <TextView
+        android:background="@color/teal_700"
+        android:id="@+id/playerTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="30sp"
+        android:text="@string/mainactivity_title"
+        android:textColor="@color/black"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true">
+    </TextView>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/playerTitle"
+        android:layout_above="@id/player_controller"
+        android:layout_alignParentStart="true">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/playSongs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </ScrollView>
+
+    <RelativeLayout
+        android:id="@+id/player_controller"
+        android:background="@color/teal_700"
+        android:layout_width="match_parent"
+        android:layout_height="128dp"
+        android:layout_alignParentBottom="true">
+
+        <SeekBar
+            android:maxHeight="5dp"
+            android:minHeight="5dp"
+            android:id="@+id/player_progressbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_toEndOf="@id/progress_played"
+            android:layout_toStartOf="@id/progress_total"
+            android:thumb="@drawable/shape_point_circular"
+            android:translationZ="1dp"
+            android:visibility="visible"
+            android:progressDrawable="@drawable/bar_line"/>
+
+        <TextView
+            android:maxLength="-1"
+            android:gravity="end"
+            android:id="@+id/progress_played"
+            android:layout_width="72dp"
+            android:layout_height="24dp"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:maxLines="1"
+            android:textSize="20sp"
+            android:translationZ="-1dp"
+            />
+        <TextView
+            android:maxLength="-1"
+            android:gravity="start"
+            android:maxLines="1"
+            android:id="@+id/progress_total"
+            android:layout_width="72dp"
+            android:layout_height="24dp"
+            android:textSize="20sp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"/>
+
+
+        <ImageView
+            android:id="@+id/player_prev"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_below="@id/player_progressbar"
+            android:layout_alignParentStart="true"
+            android:src="@drawable/_m"
+            android:translationX="12dp"
+            android:translationY="12dp"/>
+
+        <ImageView
+            android:id="@+id/player_pause"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_below="@id/player_progressbar"
+            android:layout_toEndOf="@id/player_prev"
+            android:src="@drawable/_o"
+            android:translationX="24dp"
+            android:translationY="12dp"/>
+
+        <ImageView
+            android:id="@+id/player_next"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_below="@id/player_progressbar"
+            android:layout_toEndOf="@id/player_pause"
+            android:rotationY="180"
+            android:src="@drawable/_m"
+            android:translationX="36dp"
+            android:translationY="12dp"/>
+
+        <ImageView
+            android:id="@+id/player_order"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_below="@id/player_prev"
+            android:layout_alignParentStart="true"
+            android:src="@drawable/mode_0_7e0508f"
+            android:translationX="12dp"
+            android:translationY="24dp"/>
+
+        <com.linearity.musicplayer.MarqueeNoFocusTextView
+            android:singleLine="true"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:id="@+id/song_title"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:layout_toEndOf="@id/player_next"
+            android:layout_alignParentEnd="true"
+            android:layout_below="@id/player_progressbar"
+            android:textSize="36sp"
+            android:translationX="48dp"
+            android:maxLines="1"
+            android:fadingEdge="horizontal"/>
+        <com.linearity.musicplayer.MarqueeNoFocusTextView
+            android:singleLine="true"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:ellipsize="marquee"
+            android:id="@+id/song_author"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:maxLines="1"
+            android:fadingEdge="horizontal"
+            android:layout_toEndOf="@id/player_next"
+            android:layout_alignParentEnd="true"
+            android:textSize="24sp"
+            android:translationX="48dp"
+            android:layout_below="@id/song_title"/>
+    </RelativeLayout>
+
+
+</RelativeLayout>
