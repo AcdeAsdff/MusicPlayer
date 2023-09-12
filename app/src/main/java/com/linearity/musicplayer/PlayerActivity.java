@@ -146,9 +146,7 @@ public class PlayerActivity extends Activity {
         });
         pause_continue.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                instance.PauseOnClick();
-            }
+            public void onClick(View v) {instance.PauseOnClick();}
         });
         player_prev.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -200,6 +198,7 @@ public class PlayerActivity extends Activity {
             }
         },0,50);
         instance.UpdatePlayerActivityInstance();
+//        instance.UpdatePauseStatus();
 
     }
 
