@@ -1,7 +1,5 @@
 package com.linearity.musicplayer;
 
-import static com.linearity.musicplayer.PlayerActivity.playerActivityInstance;
-
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -40,31 +38,33 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Timer;
 
 public class MainActivity extends Activity {
+    public static String playerChannelId = "linearityNotificationPlayer";
+    public static Timer PlayerActivityTimer;
     public static String playingSongPath = "";
     public static boolean isPrevNextClicked = false;
+    public static boolean isSongItemClicked = false;
     public static SharedPreferences sharedPreferences_PathData;
     public static SharedPreferences.Editor sharedPreferencesEditor_PathData;
     public static List<String> folderList = new ArrayList<>();
     public static String PlayerActivityFolder;
     public static String PlayerActivityFolderAbsPath;
-    public static MainActivity instance;
+    public static PlayerService instance;
 
     public static MediaPlayer mediaPlayer;
-    public int playOrder;
     public static int playSong;
-    Random random = new Random();
     public static String[] pathToListen2;
     public static Boolean isProgressBarChanging = false;
     public static boolean isPreparing = true;
+    public static PlayerActivity playerActivityInstance;
+    public static MainActivity mainActivityInstance;
     @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-        playOrder = 0;
-        playSong = 0;
-        instance = this;
-        mediaPlayer = new MediaPlayer();
+        mainActivityInstance = this;
+        startService(new Intent(this, PlayerService.class));
         super.onCreate(savedInstanceState);
         setContentView(R.layout.mainactivity);
         sharedPreferences_PathData = getSharedPreferences("PlayerPathData", MODE_PRIVATE);
@@ -72,9 +72,9 @@ public class MainActivity extends Activity {
 //        sharedPreferencesEditor_PathData = sharedPreferences_PathData.edit(); do it when U want to use
 
         RecyclerView recyclerView = findViewById(R.id.playFolders);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(instance);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(linearLayoutManager);
-        recyclerView.addItemDecoration(new DividerItemDecoration(instance,DividerItemDecoration.VERTICAL));
+        recyclerView.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
         recyclerView.setItemAnimator( new DefaultItemAnimator());
         playerFolderAdapter playerFolderAdapter = new playerFolderAdapter(folderList);
         recyclerView.setAdapter(playerFolderAdapter);
@@ -83,8 +83,8 @@ public class MainActivity extends Activity {
         addFolder.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                View addFolderView = View.inflate(instance,R.layout.addfolder_edittext,null);
-                AlertDialog alertDialog = new AlertDialog.Builder(instance)
+                View addFolderView = View.inflate(MainActivity.this,R.layout.addfolder_edittext,null);
+                AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this)
                         .setView(addFolderView).show();
 
                 EditText folderLocation = (EditText) addFolderView.findViewById(R.id.et_name);
@@ -114,10 +114,10 @@ public class MainActivity extends Activity {
                                 alertDialog.cancel();
                                 playerFolderAdapter.notifyItemInserted(folderList.size() - 1);
                             }else {
-                                Toast.makeText(instance, R.string.path_exists, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(MainActivity.this, R.string.path_exists, Toast.LENGTH_SHORT).show();
                             }
                         }else {
-                            Toast.makeText(instance, R.string.path_not_found, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, R.string.path_not_found, Toast.LENGTH_SHORT).show();
                         }
                     }
                 });
@@ -171,147 +171,5 @@ public class MainActivity extends Activity {
 
 
 
-    public void prev_next(int prevOrNext){
-        playSong += prevOrNext;
-        if (playSong < 0){
-            playSong += pathToListen2.length;
-        }
-        playSong %= pathToListen2.length;
-        Play(pathToListen2[playSong]);
-    }
-    public void Pause(){
-        if (mediaPlayer.isPlaying()){
-            mediaPlayer.pause();
-        }else if (mediaPlayer.getDuration() != -1){
-            mediaPlayer.start();
-        }
-        UpdatePauseStatus();
-    }
 
-    public void UpdatePauseStatus(){
-        if (mediaPlayer.isPlaying()){
-            playerActivityInstance.pause_continue.setImageResource(R.drawable._o);
-        }else {
-            playerActivityInstance.pause_continue.setImageResource(R.drawable.dv);
-        }
-    }
-
-    public void UpdateOrderStatus(){
-        switch (playOrder){
-            case 0:{
-                playerActivityInstance.changeOrder.setImageResource(R.drawable.mode_0_7e0508f);
-                mediaPlayer.setLooping(false);
-                break;
-            }
-            case 1:{
-                playerActivityInstance.changeOrder.setImageResource(R.drawable.mode_1_3b4f2c2);
-                mediaPlayer.setLooping(true);
-                break;
-            }
-            case 2:{
-                playerActivityInstance.changeOrder.setImageResource(R.drawable.mode_2_5fb7b02);
-                mediaPlayer.setLooping(false);
-                break;
-            }
-        }
-    }
-
-    public void Play(String path){
-        if (mediaPlayer.isPlaying()){
-            mediaPlayer.stop();
-        }
-        isPreparing = true;
-        playerActivityInstance.titleTextView.setText("");
-        playerActivityInstance.authorTextView.setText("");
-        mediaPlayer.release();
-        mediaPlayer = null;
-        mediaPlayer = new MediaPlayer();
-
-        try {
-            mediaPlayer.setDataSource(path);
-            playingSongPath = path;
-            mediaPlayer.prepareAsync();
-            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    mediaPlayer.start();
-                    isPreparing = false;
-                    playerActivityInstance.progress_total.setText(getTimeStringFromMills(mediaPlayer.getDuration()));
-                    playerActivityInstance.progress_played.setText(getTimeStringFromMills(mediaPlayer.getCurrentPosition()));
-                    playerActivityInstance.progressBar.setMax(mediaPlayer.getDuration());
-                    UpdatePauseStatus();
-                    playerActivityInstance.titleTextView.setText(path.split("/")[path.split("/").length - 1]);
-                    if (path.endsWith(".mp3")){
-                        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-                        mmr.setDataSource(path);
-                        String author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-                        if (author != null) {
-                            playerActivityInstance.authorTextView.setText(author);
-                        } else {
-                            playerActivityInstance.authorTextView.setText("");
-                        }
-                    }
-                }
-            });
-            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mp) {
-                    if (pathToListen2.length > 0){
-                        switch (playOrder){
-                            case 0:{
-                                if (isPrevNextClicked){
-                                    isPrevNextClicked = false;
-                                    break;
-                                }
-                                prev_next(1);
-                                break;
-                            }
-                            case 1:{
-                                if (isPrevNextClicked){
-                                    isPrevNextClicked = false;
-                                    break;
-                                }
-                                if (!mediaPlayer.isLooping()){
-                                    Play(playingSongPath);
-                                    mediaPlayer.setLooping(true);
-                                }
-                                break;
-                            }
-                            case 2:{
-                                if (isPrevNextClicked){
-                                    isPrevNextClicked = false;
-                                }
-                                prev_next(random.nextInt(pathToListen2.length));
-                                break;
-                            }
-                        }
-                    }
-                }
-            });
-//            progress_total.setText(mediaPlayer.getDuration());
-            UpdatePauseStatus();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static String getTimeStringFromMills(int mills){
-        StringBuilder stringBuilder = new StringBuilder();
-        int totalSeconds = mills / 1000;
-        int totalMinutes = totalSeconds / 60;
-        int seconds = totalSeconds % 60;
-        int hours = totalMinutes / 60;
-        int minutes = totalMinutes % 60;
-        if (hours != 0){
-            stringBuilder.append(hours);
-            stringBuilder.append(":");
-        }
-        stringBuilder.append(minutes);
-        stringBuilder.append(":");
-        if (seconds < 10){
-            stringBuilder.append(0);
-        }
-        stringBuilder.append(seconds);
-        return stringBuilder.toString();
-    }
 }

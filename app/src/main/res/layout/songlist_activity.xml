@@ -115,6 +115,19 @@
             android:translationX="12dp"
             android:translationY="24dp"/>
 
+        <TextView
+            android:maxLength="-1"
+            android:gravity="start"
+            android:maxLines="1"
+            android:id="@+id/drag2time"
+            android:layout_width="72dp"
+            android:layout_height="24dp"
+            android:textSize="20sp"
+            android:layout_toEndOf="@id/player_order"
+            android:layout_below="@id/player_prev"
+            android:translationX="24dp"
+            android:translationY="36dp"/>
+
         <com.linearity.musicplayer.MarqueeNoFocusTextView
             android:singleLine="true"
             android:ellipsize="marquee"

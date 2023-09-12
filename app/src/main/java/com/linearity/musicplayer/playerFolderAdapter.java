@@ -6,6 +6,7 @@ import static com.linearity.musicplayer.MainActivity.PlayerActivityFolder;
 import static com.linearity.musicplayer.MainActivity.PlayerActivityFolderAbsPath;
 import static com.linearity.musicplayer.MainActivity.folderList;
 import static com.linearity.musicplayer.MainActivity.instance;
+import static com.linearity.musicplayer.MainActivity.mainActivityInstance;
 import static com.linearity.musicplayer.MainActivity.sharedPreferencesEditor_PathData;
 import static com.linearity.musicplayer.MainActivity.sharedPreferences_PathData;
 
@@ -101,7 +102,7 @@ public class playerFolderAdapter extends RecyclerView.Adapter<playerFolderAdapte
                 PlayerActivityFolder = finalFolderName;
                 PlayerActivityFolderAbsPath = absPath;
                 Intent intent = new Intent(v.getContext(), PlayerActivity.class);
-                instance.startActivity(intent);//stole this sill instead of Broadcast from slimefun plugins lol
+                mainActivityInstance.startActivity(intent);//stole this sill instead of Broadcast from slimefun plugins lol
             }
         });
     }

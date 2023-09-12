@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:background="@color/miku"
+    android:id="@+id/small_notification_player_background">
+
+
+    <ImageView
+        android:id="@+id/small_notification_player_prev"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_toStartOf="@id/small_notification_player_pause"
+        android:layout_centerInParent="true"
+        android:src="@drawable/_m"
+        android:translationX="-36dp"/>
+
+    <ImageView
+        android:id="@+id/small_notification_player_pause"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_toStartOf="@id/small_notification_player_next"
+        android:layout_centerInParent="true"
+        android:src="@drawable/_o"
+        android:translationX="-24dp"/>
+
+    <ImageView
+        android:id="@+id/small_notification_player_next"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerInParent="true"
+        android:rotationY="180"
+        android:src="@drawable/_m"
+        android:translationX="-12dp"/>
+
+    <ImageView
+        android:id="@+id/small_notification_player_order"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_toStartOf="@id/small_notification_player_prev"
+        android:layout_centerInParent="true"
+        android:src="@drawable/mode_0_7e0508f"
+        android:translationX="-48dp"/>
+</RelativeLayout>

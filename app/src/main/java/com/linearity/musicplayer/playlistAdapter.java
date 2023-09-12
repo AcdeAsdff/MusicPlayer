@@ -1,25 +1,17 @@
 package com.linearity.musicplayer;
 
-import static com.linearity.musicplayer.MainActivity.folderList;
 import static com.linearity.musicplayer.MainActivity.instance;
-import static com.linearity.musicplayer.MainActivity.sharedPreferencesEditor_PathData;
-import static com.linearity.musicplayer.MainActivity.sharedPreferences_PathData;
-import static com.linearity.musicplayer.PlayerActivity.playerActivityInstance;
+import static com.linearity.musicplayer.MainActivity.isProgressBarChanging;
 
-import android.app.AlertDialog;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 
 public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
@@ -59,8 +51,10 @@ public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
         holder.mainLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                instance.playSong = holder.getAdapterPosition() - 1;
+                if (isProgressBarChanging){return;}
+                MainActivity.playSong = holder.getAdapterPosition();
                 instance.Play(absPath);
+                MainActivity.isSongItemClicked = true;
             }
         });
     }
@@ -73,7 +67,6 @@ public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
     @NonNull
     @Override
     public playlistAdapter.VH onCreateViewHolder(ViewGroup parent, int viewType) {
-        //LayoutInflater.from指定写法
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.song_viewholder, parent, false);
         return new playlistAdapter.VH(v);
     }

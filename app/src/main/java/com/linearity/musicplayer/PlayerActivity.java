@@ -1,17 +1,11 @@
 package com.linearity.musicplayer;
 
-import static com.linearity.musicplayer.MainActivity.PlayerActivityFolder;
-import static com.linearity.musicplayer.MainActivity.PlayerActivityFolderAbsPath;
-import static com.linearity.musicplayer.MainActivity.getTimeStringFromMills;
-import static com.linearity.musicplayer.MainActivity.instance;
-import static com.linearity.musicplayer.MainActivity.isPreparing;
-import static com.linearity.musicplayer.MainActivity.isPrevNextClicked;
-import static com.linearity.musicplayer.MainActivity.isProgressBarChanging;
-import static com.linearity.musicplayer.MainActivity.mediaPlayer;
-import static com.linearity.musicplayer.MainActivity.pathToListen2;
+import static com.linearity.musicplayer.MainActivity.*;
+import static com.linearity.musicplayer.PlayerService.getTimeStringFromMills;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Notification;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
@@ -19,10 +13,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.RemoteViews;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -43,7 +39,6 @@ import java.util.TimerTask;
 //read "xxxxx.musiclist"which stores absolute patches of songs
 public class PlayerActivity extends Activity {
 
-    public static PlayerActivity playerActivityInstance;
 
     TextView progress_played;
     TextView progress_total;
@@ -51,12 +46,16 @@ public class PlayerActivity extends Activity {
 
     TextView authorTextView;
     TextView titleTextView;
+    TextView drag2TimeTextView;
 
     ImageView pause_continue;
     ImageView changeOrder;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
+        if (playerActivityInstance != null){
+            playerActivityInstance.finish();
+        }
         playerActivityInstance = this;
         super.onCreate(savedInstanceState);
 
@@ -94,7 +93,8 @@ public class PlayerActivity extends Activity {
                                 };
                                 File file1 = new File(str);
                                 if (file1.exists()) {//and I'll always check it.
-                                    if (str.endsWith(".mp3") || str.endsWith(".wav")){
+                                    String str1 = str.toLowerCase();
+                                    if (str1.endsWith(".mp3") || str1.endsWith(".wav")){
                                         Songlist.add(str);
                                     }
 //                                    else if (file1.isDirectory()){
@@ -124,6 +124,7 @@ public class PlayerActivity extends Activity {
         }
         titleTextView = findViewById(R.id.song_title);
         authorTextView = findViewById(R.id.song_author);
+        drag2TimeTextView = findViewById(R.id.drag2time);
 
         progress_played = findViewById(R.id.progress_played);
         progress_total = findViewById(R.id.progress_total);
@@ -140,42 +141,34 @@ public class PlayerActivity extends Activity {
         changeOrder.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                instance.playOrder += 1;
-                instance.playOrder %= 3;
-                instance.UpdateOrderStatus();
+                instance.ChangeOrderOnClick();
             }
         });
         pause_continue.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                instance.Pause();
+                instance.PauseOnClick();
             }
         });
         player_prev.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isPrevNextClicked = true;
-                if (instance.playOrder == 2) {
-                    instance.prev_next(instance.random.nextInt(pathToListen2.length));
-                    return;
-                }
-                instance.prev_next(-1);
+                instance.PrevOnClick();
             }
         });
         player_next.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isPrevNextClicked = true;
-                if (instance.playOrder == 2) {
-                    instance.prev_next(instance.random.nextInt(pathToListen2.length));
-                    return;
-                }
-                instance.prev_next(1);
+                instance.NextOnClick();
             }
         });
         progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (isProgressBarChanging){
+                    drag2TimeTextView.setText(getTimeStringFromMills(progressBar.getProgress()));
+                }
+                if (!mediaPlayer.isPlaying() && !mediaPlayer.isLooping()){return;}
                 progress_total.setText(getTimeStringFromMills(mediaPlayer.getDuration()));
                 progress_played.setText(getTimeStringFromMills(mediaPlayer.getCurrentPosition()));
             }
@@ -183,24 +176,31 @@ public class PlayerActivity extends Activity {
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
                 isProgressBarChanging = true;
+                drag2TimeTextView.setText(getTimeStringFromMills(progressBar.getProgress()));
             }
-
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 isProgressBarChanging = false;
                 mediaPlayer.seekTo(progressBar.getProgress());
                 progress_played.setText(getTimeStringFromMills(mediaPlayer.getCurrentPosition()));
+                drag2TimeTextView.setText("");
             }
         });
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
+        if (PlayerActivityTimer != null){
+            PlayerActivityTimer.cancel();
+        }
+        PlayerActivityTimer = new Timer();
+        PlayerActivityTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                 if(!isProgressBarChanging && !isPreparing){
+                    if (mediaPlayer == null){return;}
                     progressBar.setProgress(mediaPlayer.getCurrentPosition());
                 }
             }
         },0,50);
+        instance.UpdatePlayerActivityInstance();
+
     }
 
 }
