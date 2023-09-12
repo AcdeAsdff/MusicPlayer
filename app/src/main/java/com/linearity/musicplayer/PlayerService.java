@@ -1,9 +1,15 @@
 package com.linearity.musicplayer;
 
 import static android.app.Notification.FLAG_NO_CLEAR;
-import static com.linearity.musicplayer.MainActivity.*;
+import static com.linearity.musicplayer.MainActivity.instance;
+import static com.linearity.musicplayer.MainActivity.isPreparing;
+import static com.linearity.musicplayer.MainActivity.isPrevNextClicked;
+import static com.linearity.musicplayer.MainActivity.isSongItemClicked;
+import static com.linearity.musicplayer.MainActivity.mediaPlayer;
+import static com.linearity.musicplayer.MainActivity.playSong;
+import static com.linearity.musicplayer.MainActivity.playerChannelId;
+import static com.linearity.musicplayer.MainActivity.playingSongPath;
 
-import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -11,21 +17,25 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.IBinder;
 import android.widget.RemoteViews;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.io.File;
+import java.util.LinkedList;
 import java.util.Random;
 
 public class PlayerService extends Service {
+    public PlayerActivity playerActivityInstance;
+    public static LinkedList<Integer> songIndexes;
+    public static String[] pathToListen2;
+    public static LinkedList<Integer> randomPlayedSongs = new LinkedList<>();
     Random random = new Random();
     public Notification NotificationPlayer;
     public int playOrder;
@@ -37,11 +47,16 @@ public class PlayerService extends Service {
     public static PendingIntent pendingIntentPause;
     public static Intent intentOrder;
     public static PendingIntent pendingIntentOrder;
+    public static Intent intentCloseNotification;
+    public static PendingIntent pendingIntentCloseNotification;
     public RemoteViews notificationLayout;
     public RemoteViews notificationLayoutSmall;
     public NotificationManager nManager;
     public Intent PlayerServiceBroadcastReceiverIntent;
     public PendingIntent PlayerServiceBroadcastReceiverPending;
+    public boolean useNotificationPlayer;
+    public PlayerServiceBroadcastReceiver playerServiceBroadcastReceiver;
+    public IntentFilter iFilter;
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -50,18 +65,13 @@ public class PlayerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        useNotificationPlayer = true;
         instance = this;
         playOrder = 0;
         playSong = 0;
         mediaPlayer = new MediaPlayer();
-        intentPrev = new Intent("linearity_musicplayer_prev");
-        pendingIntentPrev = PendingIntent.getBroadcast(this, 0, intentPrev, PendingIntent.FLAG_IMMUTABLE);
-        intentNext = new Intent("linearity_musicplayer_next");
-        pendingIntentNext = PendingIntent.getBroadcast(this, 0, intentNext, PendingIntent.FLAG_IMMUTABLE);
-        intentPause = new Intent("linearity_musicplayer_pause");
-        pendingIntentPause = PendingIntent.getBroadcast(this, 0, intentPause, PendingIntent.FLAG_IMMUTABLE);
-        intentOrder = new Intent("linearity_musicplayer_order");
-        pendingIntentOrder = PendingIntent.getBroadcast(this, 0, intentOrder, PendingIntent.FLAG_IMMUTABLE);
+
+        setupIntents();
 
         initNotificationLayouts();
 
@@ -69,14 +79,17 @@ public class PlayerService extends Service {
         PlayerServiceBroadcastReceiverPending = PendingIntent.getActivity(this, R.string.app_name, PlayerServiceBroadcastReceiverIntent, PendingIntent.FLAG_IMMUTABLE);
         NotificationChannel nChannel = new NotificationChannel(playerChannelId, playerChannelId, NotificationManager.IMPORTANCE_LOW);
         nChannel.setDescription(playerChannelId);
-        IntentFilter iFilter = new IntentFilter();
-        iFilter.addAction(intentPause.getAction());
-        iFilter.addAction(intentPrev.getAction());
-        iFilter.addAction(intentNext.getAction());
-        iFilter.addAction(intentOrder.getAction());
-//        nManager.createNotificationChannel(nChannel);
+
+        initIntentFilter();
+
         nManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        registerReceiver(new PlayerServiceBroadcastReceiver(), iFilter);
+        nManager.createNotificationChannel(nChannel);
+        if (playerServiceBroadcastReceiver == null){
+            playerServiceRegisterReceiver();
+        }else {
+            unregisterReceiver(playerServiceBroadcastReceiver);
+            playerServiceRegisterReceiver();
+        }
         NotificationPlayer = new NotificationCompat.Builder(this, playerChannelId)
                 .setContentIntent(PlayerServiceBroadcastReceiverPending)
                 .setCustomContentView(notificationLayoutSmall)
@@ -92,6 +105,9 @@ public class PlayerService extends Service {
     @Override
     public void onDestroy() {
         instance = null;
+        if (useNotificationPlayer){
+            switchNotificationState();
+        }
     }
 
 
@@ -109,10 +125,11 @@ public class PlayerService extends Service {
         }else if (mediaPlayer.getDuration() != -1){
             mediaPlayer.start();
         }
-        UpdatePauseStatus();
+//        UpdatePauseStatus();
     }
 
     public void initNotificationLayouts(){
+        if (!useNotificationPlayer){return;}
         notificationLayout = new RemoteViews(getPackageName(), R.layout.player_notification);
         notificationLayout.setOnClickPendingIntent(R.id.notification_player_prev, pendingIntentPrev);
         notificationLayout.setOnClickPendingIntent(R.id.notification_player_next, pendingIntentNext);
@@ -124,10 +141,14 @@ public class PlayerService extends Service {
         notificationLayoutSmall.setOnClickPendingIntent(R.id.small_notification_player_next, pendingIntentNext);
         notificationLayoutSmall.setOnClickPendingIntent(R.id.small_notification_player_pause, pendingIntentPause);
         notificationLayoutSmall.setOnClickPendingIntent(R.id.small_notification_player_order, pendingIntentOrder);
+        notificationLayoutSmall.setOnClickPendingIntent(R.id.close_notification, pendingIntentCloseNotification);
     }
     public void UpdateNotificationPlayer(){
-        initNotificationLayouts();
+        if (useNotificationPlayer){initNotificationLayouts();}
+        UpdatePauseStatus();
+        UpdateOrderStatus();
 //        nManager.cancelAll();
+        if (!useNotificationPlayer){return;}
         String title = playingSongPath.split("/")[playingSongPath.split("/").length - 1];
         notificationLayout.setTextViewText(R.id.notification_song_title, title);
         notificationLayout.setTextViewText(R.id.notification_song_author, "");
@@ -155,12 +176,16 @@ public class PlayerService extends Service {
     public void UpdatePauseStatus(){
         if (mediaPlayer.isPlaying()){
             if (playerActivityInstance != null){playerActivityInstance.pause_continue.setImageResource(R.drawable._o);}
-            notificationLayout.setImageViewResource(R.id.notification_player_pause, R.drawable._o);
-            notificationLayoutSmall.setImageViewResource(R.id.small_notification_player_pause, R.drawable._o);
+            if (!useNotificationPlayer){
+                notificationLayout.setImageViewResource(R.id.notification_player_pause, R.drawable._o);
+                notificationLayoutSmall.setImageViewResource(R.id.small_notification_player_pause, R.drawable._o);
+            }
         }else {
             if (playerActivityInstance != null){playerActivityInstance.pause_continue.setImageResource(R.drawable.dv);}
-            notificationLayout.setImageViewResource(R.id.notification_player_pause, R.drawable.dv);
-            notificationLayoutSmall.setImageViewResource(R.id.small_notification_player_pause, R.drawable.dv);
+            if (useNotificationPlayer){
+                notificationLayout.setImageViewResource(R.id.notification_player_pause, R.drawable.dv);
+                notificationLayoutSmall.setImageViewResource(R.id.small_notification_player_pause, R.drawable.dv);
+            }
         }
     }
 
@@ -168,23 +193,30 @@ public class PlayerService extends Service {
         switch (playOrder){
             case 0:{
                 if (playerActivityInstance != null){playerActivityInstance.changeOrder.setImageResource(R.drawable.mode_0_7e0508f);}
-                notificationLayout.setImageViewResource(R.id.notification_player_order, R.drawable.mode_0_7e0508f);
-                notificationLayoutSmall.setImageViewResource(R.id.small_notification_player_order, R.drawable.mode_0_7e0508f);
                 mediaPlayer.setLooping(false);
+                if (useNotificationPlayer){
+                    notificationLayout.setImageViewResource(R.id.notification_player_order, R.drawable.mode_0_7e0508f);
+                    notificationLayoutSmall.setImageViewResource(R.id.small_notification_player_order, R.drawable.mode_0_7e0508f);
+                }
                 break;
             }
             case 1:{
-                if (playerActivityInstance != null){playerActivityInstance.changeOrder.setImageResource(R.drawable.mode_1_3b4f2c2);}
-                notificationLayout.setImageViewResource(R.id.notification_player_order, R.drawable.mode_1_3b4f2c2);
-                notificationLayoutSmall.setImageViewResource(R.id.small_notification_player_order, R.drawable.mode_1_3b4f2c2);
                 mediaPlayer.setLooping(true);
+                if (playerActivityInstance != null){playerActivityInstance.changeOrder.setImageResource(R.drawable.mode_1_3b4f2c2);}
+                if (useNotificationPlayer){
+                    notificationLayout.setImageViewResource(R.id.notification_player_order, R.drawable.mode_1_3b4f2c2);
+                    notificationLayoutSmall.setImageViewResource(R.id.small_notification_player_order, R.drawable.mode_1_3b4f2c2);
+                }
                 break;
             }
             case 2:{
                 if (playerActivityInstance != null){playerActivityInstance.changeOrder.setImageResource(R.drawable.mode_2_5fb7b02);}
-                notificationLayout.setImageViewResource(R.id.notification_player_order, R.drawable.mode_2_5fb7b02);
-                notificationLayoutSmall.setImageViewResource(R.id.small_notification_player_order, R.drawable.mode_2_5fb7b02);
                 mediaPlayer.setLooping(false);
+                if (useNotificationPlayer){
+                    notificationLayout.setImageViewResource(R.id.notification_player_order, R.drawable.mode_2_5fb7b02);
+                    notificationLayoutSmall.setImageViewResource(R.id.small_notification_player_order, R.drawable.mode_2_5fb7b02);
+                }
+
                 break;
             }
         }
@@ -199,11 +231,8 @@ public class PlayerService extends Service {
             playerActivityInstance.titleTextView.setText("");
             playerActivityInstance.authorTextView.setText("");
         }
-        if (mediaPlayer != null){
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-        mediaPlayer = new MediaPlayer();
+        if (mediaPlayer != null){mediaPlayer.reset();}
+        else {mediaPlayer = new MediaPlayer();}
 
         try {
             mediaPlayer.setDataSource(path);
@@ -251,7 +280,8 @@ public class PlayerService extends Service {
                                     isSongItemClicked = false;
                                     break;
                                 }
-                                prev_next(random.nextInt(pathToListen2.length));
+//                                prev_next(random.nextInt(pathToListen2.length));
+                                playRandom();
                                 break;
                             }
                         }
@@ -269,7 +299,9 @@ public class PlayerService extends Service {
 
     public void UpdatePlayerActivityInstance() {
         String title = playingSongPath.split("/")[playingSongPath.split("/").length - 1];
-        if (playerActivityInstance != null){
+//        Log.d("[linearity]","UpdatePlayerActivityInstance:Called");
+        if (this.playerActivityInstance != null){
+//            Log.d("[linearity]","UpdatePlayerActivityInstance:playerActivityInstance non null");
             playerActivityInstance.progress_total.setText(getTimeStringFromMills(mediaPlayer.getDuration()));
             playerActivityInstance.progress_played.setText(getTimeStringFromMills(mediaPlayer.getCurrentPosition()));
             playerActivityInstance.progressBar.setMax(mediaPlayer.getDuration());
@@ -283,12 +315,14 @@ public class PlayerService extends Service {
                 if (playerActivityInstance != null){
                     playerActivityInstance.authorTextView.setText(author);
                 }
-                notificationLayout.setTextViewText(R.id.notification_song_author, author);
+                if (useNotificationPlayer){
+                    notificationLayout.setTextViewText(R.id.notification_song_author, author);
+                }
             } else {
                 if (playerActivityInstance != null){
                     playerActivityInstance.authorTextView.setText("");
                 }
-                notificationLayout.setTextViewText(R.id.notification_song_author, "");
+                if (useNotificationPlayer){notificationLayout.setTextViewText(R.id.notification_song_author, "");}
             }
         }
         UpdatePauseStatus();
@@ -316,9 +350,12 @@ public class PlayerService extends Service {
     }
 
     public void NextOnClick(){
+
+//        Log.e("[linearity]", "onCompletion: " + randomPlayedSongs.size());
         isPrevNextClicked = true;
         if (instance.playOrder == 2) {
-            instance.prev_next(instance.random.nextInt(pathToListen2.length));
+//            instance.prev_next(instance.random.nextInt(pathToListen2.length));
+            playRandom();
             return;
         }
         instance.prev_next(1);
@@ -328,7 +365,8 @@ public class PlayerService extends Service {
     public void PrevOnClick(){
         isPrevNextClicked = true;
         if (instance.playOrder == 2) {
-            instance.prev_next(instance.random.nextInt(pathToListen2.length));
+//            instance.prev_next(instance.random.nextInt(pathToListen2.length));
+            playRandom();
             return;
         }
         instance.prev_next(-1);
@@ -345,5 +383,71 @@ public class PlayerService extends Service {
         instance.playOrder %= 3;
         instance.UpdateOrderStatus();
         UpdateNotificationPlayer();
+        if (playOrder == 2){
+            randomPlayedSongs = (LinkedList<Integer>) songIndexes.clone();
+        }
+    }
+
+    public void playRandom(){
+        if (randomPlayedSongs.size() == 0){
+            randomPlayedSongs = (LinkedList<Integer>) songIndexes.clone();
+        }
+        int playRandomSongIndex = random.nextInt(randomPlayedSongs.size() - 1);
+        Play(pathToListen2[randomPlayedSongs.remove(playRandomSongIndex)]);
+    }
+
+    public void switchNotificationState(){
+        //close
+        if (useNotificationPlayer){
+            unregisterReceiver(playerServiceBroadcastReceiver);
+            nManager.cancel(R.string.app_name);
+        }else {
+            initIntentFilter();
+            NotificationPlayer =
+                    new NotificationCompat.Builder(this, playerChannelId)
+                    .setContentIntent(PlayerServiceBroadcastReceiverPending)
+                    .setCustomContentView(notificationLayoutSmall)
+                    .setCustomBigContentView(notificationLayout)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setShowWhen(false)
+                    .build();
+            NotificationPlayer.flags = FLAG_NO_CLEAR;
+            nManager.notify(R.string.app_name,NotificationPlayer);
+            if (Build.VERSION.SDK_INT >= 33){
+                registerReceiver(playerServiceBroadcastReceiver, iFilter, RECEIVER_NOT_EXPORTED);
+            }else {
+                registerReceiver(playerServiceBroadcastReceiver, iFilter);
+            }
+        }
+        useNotificationPlayer = !useNotificationPlayer;
+    }
+    public void initIntentFilter(){
+        iFilter = new IntentFilter();
+        iFilter.addAction(intentPause.getAction());
+        iFilter.addAction(intentPrev.getAction());
+        iFilter.addAction(intentNext.getAction());
+        iFilter.addAction(intentOrder.getAction());
+        iFilter.addAction(intentCloseNotification.getAction());
+    }
+    public void setupIntents(){
+        intentPrev = new Intent("linearity_musicplayer_prev");
+        pendingIntentPrev = PendingIntent.getBroadcast(this, 0, intentPrev, PendingIntent.FLAG_IMMUTABLE);
+        intentNext = new Intent("linearity_musicplayer_next");
+        pendingIntentNext = PendingIntent.getBroadcast(this, 0, intentNext, PendingIntent.FLAG_IMMUTABLE);
+        intentPause = new Intent("linearity_musicplayer_pause");
+        pendingIntentPause = PendingIntent.getBroadcast(this, 0, intentPause, PendingIntent.FLAG_IMMUTABLE);
+        intentOrder = new Intent("linearity_musicplayer_order");
+        pendingIntentOrder = PendingIntent.getBroadcast(this, 0, intentOrder, PendingIntent.FLAG_IMMUTABLE);
+        intentCloseNotification = new Intent("linearity_musicplayer_close_notification");
+        pendingIntentCloseNotification = PendingIntent.getBroadcast(this, 0, intentCloseNotification, PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    public void playerServiceRegisterReceiver(){
+        playerServiceBroadcastReceiver = new PlayerServiceBroadcastReceiver();
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(playerServiceBroadcastReceiver, iFilter, RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(playerServiceBroadcastReceiver, iFilter);
+        }
     }
 }

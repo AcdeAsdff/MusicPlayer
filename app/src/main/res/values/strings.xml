@@ -6,8 +6,10 @@
     <string name="addFolder_Title">输入待加入的歌单文件夹</string>
     <string name="cancel">取消</string>
     <string name="confirm">确定</string>
+    <string name="clear_list_cache">清除歌单缓存</string>
     <string name="path_not_found">未找到指定路径</string>
     <string name="path_exists">路径已存在</string>
     <string name="delete_folder">是否删除文件夹?</string>
+    <string name="permission_denied_alert">注意:禁用权限可能导致应用崩溃</string>
 
 </resources>

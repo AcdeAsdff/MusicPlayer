@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:gravity="center"
     android:background="@color/teal_200"
     android:orientation="vertical"
@@ -47,6 +47,15 @@
             android:textColor="@android:color/white"
             android:textSize="40sp" />
 
-    </LinearLayout>
 
+    </LinearLayout>
+    <Button
+        android:id="@+id/clear_list_cache"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/button_bg"
+        android:text="@string/clear_list_cache"
+        android:textColor="@android:color/white"
+        android:textSize="40sp" />
 </LinearLayout>

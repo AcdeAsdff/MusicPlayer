@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/miku"
     android:id="@+id/MainActivity">
 
@@ -15,9 +13,11 @@
         android:textSize="30sp"
         android:text="@string/mainactivity_title"
         android:textColor="@color/black"
-        app:layout_constraintTop_toTopOf="@id/MainActivity"
-        app:layout_constraintLeft_toLeftOf="@id/MainActivity">
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true">
     </TextView>
+<!--    标题栏-->
+
     <android.widget.Button
         android:textColor="@color/black"
         android:background="@drawable/button_bg"
@@ -27,15 +27,22 @@
         android:textSize="30sp"
         android:text="@string/addFolder"
         android:textAlignment="center"
-        app:layout_constraintTop_toTopOf="@id/playerTitle"
-        app:layout_constraintRight_toRightOf="@id/playerTitle" />
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/playFolders"
+        android:layout_alignTop="@id/playerTitle"
+        android:layout_alignEnd="@id/playerTitle" />
+<!--    这个按钮用来加文件夹-->
+
+    <ScrollView
+        android:layout_below="@id/playerTitle"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/playerTitle"
-        app:layout_constraintLeft_toLeftOf="@id/MainActivity">
-    </androidx.recyclerview.widget.RecyclerView>
+        android:layout_height="fill_parent">
+<!--        写教程时注意到应当用ScrollView,顺便用回了RelativeLayout-->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/playFolders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+        </androidx.recyclerview.widget.RecyclerView>
+    </ScrollView>
+<!--    显示很多很多的文件夹,可以灵活变通-->
 
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</RelativeLayout>
