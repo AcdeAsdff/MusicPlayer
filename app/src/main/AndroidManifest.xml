@@ -29,11 +29,16 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".PlayerActivity"/>
-        <service android:name=".PlayerService"/>
+        <activity android:name=".PlayerActivity"
+            android:multiprocess="false"
+            />
+        <service android:name=".PlayerService"
+            android:icon="@mipmap/ic_launcher_round"
+            />
         <receiver android:name=".PlayerServiceBroadcastReceiver"
             android:enabled="true"
             android:exported="false"
+            android:icon="@mipmap/ic_launcher_round"
             />
     </application>
 

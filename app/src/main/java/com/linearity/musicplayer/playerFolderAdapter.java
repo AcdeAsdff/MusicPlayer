@@ -42,7 +42,7 @@ public class playerFolderAdapter extends RecyclerView.Adapter<playerFolderAdapte
         this.mDatas = data;
     }
 
-    //③ 在Adapter中实现3个方法
+
     @Override
     public void onBindViewHolder(VH holder, int position) {
         String absPath = folderList.get(position);
@@ -114,7 +114,6 @@ public class playerFolderAdapter extends RecyclerView.Adapter<playerFolderAdapte
     @NonNull
     @Override
     public VH onCreateViewHolder(ViewGroup parent, int viewType) {
-        //LayoutInflater.from指定写法
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.folder_viewholder, parent, false);
         return new VH(v);
     }

@@ -15,6 +15,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.BitmapFactory;
@@ -28,26 +29,38 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
 import java.io.File;
+import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.LinkedList;
 import java.util.Random;
 
 public class PlayerService extends Service {
     public PlayerActivity playerActivityInstance;
-    public static LinkedList<Integer> songIndexes;
+    public static int[] songIndexes;
     public static String[] pathToListen2;
     public static LinkedList<Integer> randomPlayedSongs = new LinkedList<>();
     Random random = new Random();
     public Notification NotificationPlayer;
+    public void initNotificationPlayer(){
+        NotificationPlayer = new NotificationCompat.Builder(this, playerChannelId)
+                .setContentIntent(PlayerServiceBroadcastReceiverPending)
+                .setCustomContentView(notificationLayoutSmall)
+                .setCustomBigContentView(notificationLayout)
+                .setSmallIcon(R.mipmap.ic_launcher_round)
+                .setShowWhen(false)
+                .build();
+        NotificationPlayer.flags = FLAG_NO_CLEAR;
+    }
     public int playOrder;
-    public static Intent intentPrev;
+    public static Intent intentPrev = new Intent("linearity_musicplayer_prev");
     public static PendingIntent pendingIntentPrev;
-    public static Intent intentNext;
+    public static Intent intentNext = new Intent("linearity_musicplayer_next");
     public static PendingIntent pendingIntentNext;
-    public static Intent intentPause;
+    public static Intent intentPause = new Intent("linearity_musicplayer_pause");
     public static PendingIntent pendingIntentPause;
-    public static Intent intentOrder;
+    public static Intent intentOrder = new Intent("linearity_musicplayer_order");
     public static PendingIntent pendingIntentOrder;
-    public static Intent intentCloseNotification;
+    public static Intent intentCloseNotification = new Intent("linearity_musicplayer_close_notification");
     public static PendingIntent pendingIntentCloseNotification;
     public RemoteViews notificationLayout;
     public RemoteViews notificationLayoutSmall;
@@ -75,8 +88,12 @@ public class PlayerService extends Service {
 
         initNotificationLayouts();
 
-        PlayerServiceBroadcastReceiverIntent = new Intent(this,PlayerServiceBroadcastReceiver.class);
-        PlayerServiceBroadcastReceiverPending = PendingIntent.getActivity(this, R.string.app_name, PlayerServiceBroadcastReceiverIntent, PendingIntent.FLAG_IMMUTABLE);
+        PlayerServiceBroadcastReceiverIntent = new Intent(this,PlayerActivity.class);
+        PlayerServiceBroadcastReceiverPending =
+                PendingIntent.getActivity(this,
+                        R.string.app_name,
+                        PlayerServiceBroadcastReceiverIntent,
+                        PendingIntent.FLAG_IMMUTABLE);
         NotificationChannel nChannel = new NotificationChannel(playerChannelId, playerChannelId, NotificationManager.IMPORTANCE_LOW);
         nChannel.setDescription(playerChannelId);
 
@@ -90,14 +107,7 @@ public class PlayerService extends Service {
             unregisterReceiver(playerServiceBroadcastReceiver);
             playerServiceRegisterReceiver();
         }
-        NotificationPlayer = new NotificationCompat.Builder(this, playerChannelId)
-                .setContentIntent(PlayerServiceBroadcastReceiverPending)
-                .setCustomContentView(notificationLayoutSmall)
-                .setCustomBigContentView(notificationLayout)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setShowWhen(false)
-                .build();
-        NotificationPlayer.flags = FLAG_NO_CLEAR;
+        initNotificationPlayer();
         nManager.notify(R.string.app_name,NotificationPlayer);
         return START_STICKY;
     }
@@ -153,25 +163,21 @@ public class PlayerService extends Service {
         notificationLayout.setTextViewText(R.id.notification_song_title, title);
         notificationLayout.setTextViewText(R.id.notification_song_author, "");
         notificationLayout.setImageViewBitmap(R.id.notification_song_image, null);
-        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-        if (playingSongPath != null && new File(playingSongPath).exists()){
-            mmr.setDataSource(playingSongPath);
+        try (MediaMetadataRetriever mmr = new MediaMetadataRetriever()){
+            if (playingSongPath != null && new File(playingSongPath).exists()){
+                mmr.setDataSource(playingSongPath);
+            }
+            byte[] songImage = mmr.getEmbeddedPicture();
+            if (songImage != null) {
+                notificationLayout.setImageViewBitmap(R.id.notification_song_image, BitmapFactory.decodeByteArray(songImage, 0, songImage.length));
+            } else {
+                notificationLayout.setImageViewBitmap(R.id.notification_song_image, null);
+            }
+            initNotificationPlayer();
+            nManager.notify(R.string.app_name, NotificationPlayer);
+        }catch (IOException e){
+            e.printStackTrace();
         }
-        byte[] songImage = mmr.getEmbeddedPicture();
-        if (songImage != null){
-            notificationLayout.setImageViewBitmap(R.id.notification_song_image,BitmapFactory.decodeByteArray(songImage,0,songImage.length));
-        }else {
-            notificationLayout.setImageViewBitmap(R.id.notification_song_image,null);
-        }
-        NotificationPlayer = new NotificationCompat.Builder(this, playerChannelId)
-                .setContentIntent(PlayerServiceBroadcastReceiverPending)
-                .setCustomContentView(notificationLayoutSmall)
-                .setCustomBigContentView(notificationLayout)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setShowWhen(false)
-                .build();
-        NotificationPlayer.flags = FLAG_NO_CLEAR;
-        nManager.notify(R.string.app_name,NotificationPlayer);
     }
     public void UpdatePauseStatus(){
         if (mediaPlayer.isPlaying()){
@@ -238,52 +244,46 @@ public class PlayerService extends Service {
             mediaPlayer.setDataSource(path);
             playingSongPath = path;
             mediaPlayer.prepareAsync();
-            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    isPrevNextClicked = false;
-                    isSongItemClicked = false;
-                    mediaPlayer.start();
-                    isPreparing = false;
-                    UpdatePlayerActivityInstance();
-                }
+            mediaPlayer.setOnPreparedListener(mp -> {
+                isPrevNextClicked = false;
+                isSongItemClicked = false;
+                mediaPlayer.start();
+                isPreparing = false;
+                UpdatePlayerActivityInstance();
             });
-            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mp) {
-                    if (pathToListen2.length > 0){
-                        switch (playOrder){
-                            case 0:{
-                                if (isPrevNextClicked || isSongItemClicked){
-                                    isPrevNextClicked = false;
-                                    isSongItemClicked = false;
-                                    break;
-                                }
-                                prev_next(1);
+            mediaPlayer.setOnCompletionListener(mp -> {
+                if (pathToListen2.length > 0){
+                    switch (playOrder){
+                        case 0:{
+                            if (isPrevNextClicked || isSongItemClicked){
+                                isPrevNextClicked = false;
+                                isSongItemClicked = false;
                                 break;
                             }
-                            case 1:{
-                                if (isPrevNextClicked || isSongItemClicked){
-                                    isPrevNextClicked = false;
-                                    isSongItemClicked = false;
-                                    break;
-                                }
-                                if (!mediaPlayer.isLooping()){
-                                    Play(playingSongPath);
-                                    mediaPlayer.setLooping(true);
-                                }
+                            prev_next(1);
+                            break;
+                        }
+                        case 1:{
+                            if (isPrevNextClicked || isSongItemClicked){
+                                isPrevNextClicked = false;
+                                isSongItemClicked = false;
                                 break;
                             }
-                            case 2:{
-                                if (isPrevNextClicked || isSongItemClicked){
-                                    isPrevNextClicked = false;
-                                    isSongItemClicked = false;
-                                    break;
-                                }
+                            if (!mediaPlayer.isLooping()){
+                                Play(playingSongPath);
+                                mediaPlayer.setLooping(true);
+                            }
+                            break;
+                        }
+                        case 2:{
+                            if (isPrevNextClicked || isSongItemClicked){
+                                isPrevNextClicked = false;
+                                isSongItemClicked = false;
+                                break;
+                            }
 //                                prev_next(random.nextInt(pathToListen2.length));
-                                playRandom();
-                                break;
-                            }
+                            playRandom();
+                            break;
                         }
                     }
                 }
@@ -308,21 +308,24 @@ public class PlayerService extends Service {
             playerActivityInstance.titleTextView.setText(title);
         }
         if (playingSongPath.endsWith(".mp3")) {
-            MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-            mmr.setDataSource(playingSongPath);
-            String author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-            if (author != null) {
-                if (playerActivityInstance != null){
-                    playerActivityInstance.authorTextView.setText(author);
+            try (MediaMetadataRetriever mmr = new MediaMetadataRetriever()){
+                mmr.setDataSource(playingSongPath);
+                String author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+                if (author != null) {
+                    if (playerActivityInstance != null){
+                        playerActivityInstance.authorTextView.setText(author);
+                    }
+                    if (useNotificationPlayer){
+                        notificationLayout.setTextViewText(R.id.notification_song_author, author);
+                    }
+                } else {
+                    if (playerActivityInstance != null){
+                        playerActivityInstance.authorTextView.setText("");
+                    }
+                    if (useNotificationPlayer){notificationLayout.setTextViewText(R.id.notification_song_author, "");}
                 }
-                if (useNotificationPlayer){
-                    notificationLayout.setTextViewText(R.id.notification_song_author, author);
-                }
-            } else {
-                if (playerActivityInstance != null){
-                    playerActivityInstance.authorTextView.setText("");
-                }
-                if (useNotificationPlayer){notificationLayout.setTextViewText(R.id.notification_song_author, "");}
+            }catch (Exception e){
+                e.printStackTrace();
             }
         }
         UpdatePauseStatus();
@@ -384,42 +387,56 @@ public class PlayerService extends Service {
         instance.UpdateOrderStatus();
         UpdateNotificationPlayer();
         if (playOrder == 2){
-            randomPlayedSongs = (LinkedList<Integer>) songIndexes.clone();
+            if (songIndexes == null){return;}
+            refreshRandomPlayedSongs();
         }
     }
-
-    public void playRandom(){
-        if (randomPlayedSongs.size() == 0){
-            randomPlayedSongs = (LinkedList<Integer>) songIndexes.clone();
+    public static void shuffleArray(int[] array){
+        int n = array.length;
+        Random random = new SecureRandom();
+        // Loop over array.
+        for (int i = 0; i < array.length; i++) {
+            // Get a random index of the array past the current index.
+            // ... The argument is an exclusive bound.
+            //     It will not go past the array send.
+            int randomValue = i + random.nextInt(n - i);
+            // Swap the random element with the present element.
+            int randomElement = array[randomValue];
+            array[randomValue] = array[i];
+            array[i] = randomElement;
         }
-        int playRandomSongIndex = random.nextInt(randomPlayedSongs.size() - 1);
-        Play(pathToListen2[randomPlayedSongs.remove(playRandomSongIndex)]);
+    }
+    public static void refreshRandomPlayedSongs(){
+        int[] randomIndexes = songIndexes.clone();
+        shuffleArray(randomIndexes);
+        randomPlayedSongs = new LinkedList<>();
+        for (int i:randomIndexes){
+            randomPlayedSongs.push(i);
+        }
+    }
+    public void playRandom(){
+        if (randomPlayedSongs.isEmpty()){
+            refreshRandomPlayedSongs();
+        }
+        Play(pathToListen2[randomPlayedSongs.poll()]);
     }
 
     public void switchNotificationState(){
         //close
-        if (useNotificationPlayer){
+        useNotificationPlayer = !useNotificationPlayer;
+        if (!useNotificationPlayer){
             unregisterReceiver(playerServiceBroadcastReceiver);
             nManager.cancel(R.string.app_name);
         }else {
             initIntentFilter();
-            NotificationPlayer =
-                    new NotificationCompat.Builder(this, playerChannelId)
-                    .setContentIntent(PlayerServiceBroadcastReceiverPending)
-                    .setCustomContentView(notificationLayoutSmall)
-                    .setCustomBigContentView(notificationLayout)
-                    .setSmallIcon(R.mipmap.ic_launcher)
-                    .setShowWhen(false)
-                    .build();
-            NotificationPlayer.flags = FLAG_NO_CLEAR;
+            initNotificationPlayer();
             nManager.notify(R.string.app_name,NotificationPlayer);
             if (Build.VERSION.SDK_INT >= 33){
-                registerReceiver(playerServiceBroadcastReceiver, iFilter, RECEIVER_NOT_EXPORTED);
-            }else {
-                registerReceiver(playerServiceBroadcastReceiver, iFilter);
+                registerReceiver(playerServiceBroadcastReceiver, iFilter, RECEIVER_VISIBLE_TO_INSTANT_APPS | Context.RECEIVER_EXPORTED);
+            } else{
+                registerReceiver(playerServiceBroadcastReceiver, iFilter, RECEIVER_VISIBLE_TO_INSTANT_APPS);
             }
         }
-        useNotificationPlayer = !useNotificationPlayer;
     }
     public void initIntentFilter(){
         iFilter = new IntentFilter();
@@ -430,22 +447,21 @@ public class PlayerService extends Service {
         iFilter.addAction(intentCloseNotification.getAction());
     }
     public void setupIntents(){
-        intentPrev = new Intent("linearity_musicplayer_prev");
         pendingIntentPrev = PendingIntent.getBroadcast(this, 0, intentPrev, PendingIntent.FLAG_IMMUTABLE);
-        intentNext = new Intent("linearity_musicplayer_next");
+
         pendingIntentNext = PendingIntent.getBroadcast(this, 0, intentNext, PendingIntent.FLAG_IMMUTABLE);
-        intentPause = new Intent("linearity_musicplayer_pause");
+
         pendingIntentPause = PendingIntent.getBroadcast(this, 0, intentPause, PendingIntent.FLAG_IMMUTABLE);
-        intentOrder = new Intent("linearity_musicplayer_order");
+
         pendingIntentOrder = PendingIntent.getBroadcast(this, 0, intentOrder, PendingIntent.FLAG_IMMUTABLE);
-        intentCloseNotification = new Intent("linearity_musicplayer_close_notification");
+
         pendingIntentCloseNotification = PendingIntent.getBroadcast(this, 0, intentCloseNotification, PendingIntent.FLAG_IMMUTABLE);
     }
 
     public void playerServiceRegisterReceiver(){
         playerServiceBroadcastReceiver = new PlayerServiceBroadcastReceiver();
         if (Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(playerServiceBroadcastReceiver, iFilter, RECEIVER_NOT_EXPORTED);
+            registerReceiver(playerServiceBroadcastReceiver, iFilter, RECEIVER_VISIBLE_TO_INSTANT_APPS | Context.RECEIVER_EXPORTED);
         } else {
             registerReceiver(playerServiceBroadcastReceiver, iFilter);
         }

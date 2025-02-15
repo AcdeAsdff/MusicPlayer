@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.io.Output;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -84,8 +85,8 @@ public class PlayerActivity extends Activity {
                     for (File f : files) {
                         executeFile(f,Songlist);
                     }
+                    pathToListen2 = Songlist.toArray(new String[0]);
                     if (!Songlist.isEmpty()){
-                        pathToListen2 = Songlist.toArray(new String[0]);
                         try {
                             FileOutputStream fileOutputStream = new FileOutputStream(strArrFile);
                             Output output = new Output(fileOutputStream);
@@ -108,21 +109,25 @@ public class PlayerActivity extends Activity {
                     }
                 }
 
-                Kryo linkedListReader;
-                linkedListReader = new Kryo();
-                linkedListReader.register(LinkedList.class);
-                linkedListReader.register(Integer.class);
+                Kryo kryoInstance;
+                kryoInstance = new Kryo();
+                kryoInstance.register(int.class);
+                kryoInstance.register(int[].class);
 
-                File linkedListFile = new File(getApplication().getDataDir(),pathToListen2.length + ".linkedlist");
-                if (!linkedListFile.exists()) {
-                    songIndexes = new LinkedList<>();
+                File songIndexesFile = new File(getApplication().getDataDir(),pathToListen2.length + ".songIndexes");
+                if (!songIndexesFile.exists()) {
+                    songIndexes = new int[pathToListen2.length];
                     for (int i = 0; i < pathToListen2.length; i++) {
-                        songIndexes.add(i);
+                        songIndexes[i]=i;
                     }
                     try {
-                        FileOutputStream fileOutputStream = new FileOutputStream(linkedListFile);
+                        if (!songIndexesFile.mkdirs() && !songIndexesFile.createNewFile()){
+                            throw new IOException("cannot create indexes file");
+                        }
+
+                        FileOutputStream fileOutputStream = new FileOutputStream(songIndexesFile);
                         Output output = new Output(fileOutputStream);
-                        linkedListReader.writeObject(output,songIndexes);
+                        kryoInstance.writeObject(output,songIndexes);
                         output.close();
                         fileOutputStream.close();
                     } catch (Exception e) {
@@ -131,9 +136,9 @@ public class PlayerActivity extends Activity {
                 }
                 else {
                     try {
-                        FileInputStream fileInputStream = new FileInputStream(linkedListFile);
+                        FileInputStream fileInputStream = new FileInputStream(songIndexesFile);
                         Input input = new Input(fileInputStream);
-                        songIndexes = (LinkedList<Integer>) linkedListReader.readObject(input, LinkedList.class);
+                        songIndexes = kryoInstance.readObject(input, int[].class);
                         input.close();
                         fileInputStream.close();
                     } catch (Exception e) {
