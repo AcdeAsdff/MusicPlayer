@@ -7,11 +7,13 @@ import static com.linearity.musicplayer.MainActivity.instance;
 import static com.linearity.musicplayer.MainActivity.isPreparing;
 import static com.linearity.musicplayer.MainActivity.isProgressBarChanging;
 import static com.linearity.musicplayer.MainActivity.mediaPlayer;
+import static com.linearity.musicplayer.MainActivity.playingSongPath;
 import static com.linearity.musicplayer.PlayerService.getTimeStringFromMills;
 import static com.linearity.musicplayer.PlayerService.pathToListen2;
 import static com.linearity.musicplayer.PlayerService.songIndexes;
 
 import android.app.Activity;
+import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -33,7 +35,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -121,7 +122,7 @@ public class PlayerActivity extends Activity {
                         songIndexes[i]=i;
                     }
                     try {
-                        if (!songIndexesFile.mkdirs() && !songIndexesFile.createNewFile()){
+                        if (!songIndexesFile.createNewFile()){
                             throw new IOException("cannot create indexes file");
                         }
 
@@ -169,7 +170,7 @@ public class PlayerActivity extends Activity {
         ImageView player_prev = findViewById(R.id.player_prev);
         ImageView player_next = findViewById(R.id.player_next);
         pause_continue = findViewById(R.id.player_pause);
-        instance.UpdatePauseStatus();
+        instance.updatePauseStatus();
         instance.UpdateOrderStatus();
 
         titleTextView.setOnClickListener(
@@ -221,7 +222,11 @@ public class PlayerActivity extends Activity {
             }
         };
         PlayerActivityTimer.schedule(progressBarTask,0,50);
-        instance.UpdatePlayerActivityInstance();
+
+        if (instance != null){
+            instance.playerActivityInstance = this;
+            updateSelf();
+        }
 //        instance.UpdatePauseStatus();
 
     }
@@ -283,6 +288,65 @@ public class PlayerActivity extends Activity {
         super.onDestroy();
         if (instance != null){
             instance.playerActivityInstance = null;
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (instance != null){
+            instance.playerActivityInstance = null;
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (instance != null){
+            instance.playerActivityInstance = this;
+            updateSelf();
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (instance != null){
+            instance.playerActivityInstance = this;
+            updateSelf();
+        }
+    }
+
+    public void updateSelf() {
+        String title = playingSongPath.split("/")[playingSongPath.split("/").length - 1];
+//        Log.d("[linearity]","UpdatePlayerActivityInstance:Called");
+
+        this.progress_total.setText(getTimeStringFromMills(mediaPlayer.getDuration()));
+        this.progress_played.setText(getTimeStringFromMills(mediaPlayer.getCurrentPosition()));
+        this.progressBar.setMax(mediaPlayer.getDuration());
+        this.titleTextView.setText(title);
+        if (playingSongPath.endsWith(".mp3")) {
+            try (MediaMetadataRetriever mmr = new MediaMetadataRetriever()){
+                mmr.setDataSource(playingSongPath);
+                String author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+                if (author != null) {
+                    this.authorTextView.setText(author);
+                    if (instance != null){
+                        if (instance.useNotificationPlayer){
+                            instance.notificationLayout.setTextViewText(R.id.notification_song_author, author);
+                        }
+                    }
+                } else {
+                    this.authorTextView.setText("");
+                    if (instance != null){
+                        if (instance.useNotificationPlayer){
+                            instance.notificationLayout.setTextViewText(R.id.notification_song_author, "");
+                        }
+                    }
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         }
     }
 }

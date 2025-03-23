@@ -4,6 +4,7 @@ import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -139,6 +140,7 @@ public class MainActivity extends Activity {
         }
     }
 
+    @SuppressLint("BatteryLife")
     public void requestIgnoreBatteryOptimizations() {
         try {
             Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
@@ -152,7 +154,7 @@ public class MainActivity extends Activity {
     private void checkPermissions(){
         List<String> permissionList = new ArrayList<>();
         for (String requirePermission:REQUIRES_PERMISSIONS){
-            if (!(ContextCompat.checkSelfPermission(this,requirePermission) ==PERMISSION_GRANTED)){
+            if (!(ContextCompat.checkSelfPermission(this,requirePermission) == PERMISSION_GRANTED)){
                 permissionList.add(requirePermission);
             }
         }

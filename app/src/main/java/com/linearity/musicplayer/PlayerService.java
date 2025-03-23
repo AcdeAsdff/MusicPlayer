@@ -153,9 +153,9 @@ public class PlayerService extends Service {
         notificationLayoutSmall.setOnClickPendingIntent(R.id.small_notification_player_order, pendingIntentOrder);
         notificationLayoutSmall.setOnClickPendingIntent(R.id.close_notification, pendingIntentCloseNotification);
     }
-    public void UpdateNotificationPlayer(){
+    public void updateNotificationPlayer(){
         if (useNotificationPlayer){initNotificationLayouts();}
-        UpdatePauseStatus();
+        updatePauseStatus();
         UpdateOrderStatus();
 //        nManager.cancelAll();
         if (!useNotificationPlayer){return;}
@@ -179,7 +179,7 @@ public class PlayerService extends Service {
             e.printStackTrace();
         }
     }
-    public void UpdatePauseStatus(){
+    public void updatePauseStatus(){
         if (mediaPlayer.isPlaying()){
             if (playerActivityInstance != null){playerActivityInstance.pause_continue.setImageResource(R.drawable._o);}
             if (!useNotificationPlayer){
@@ -249,7 +249,7 @@ public class PlayerService extends Service {
                 isSongItemClicked = false;
                 mediaPlayer.start();
                 isPreparing = false;
-                UpdatePlayerActivityInstance();
+                updatePlayerActivityInstance();
             });
             mediaPlayer.setOnCompletionListener(mp -> {
                 if (pathToListen2.length > 0){
@@ -289,7 +289,7 @@ public class PlayerService extends Service {
                 }
             });
 //            progress_total.setText(mediaPlayer.getDuration());
-            UpdatePauseStatus();
+            updatePauseStatus();
             isPrevNextClicked = false;
             isSongItemClicked = false;
         } catch (Exception e) {
@@ -297,39 +297,12 @@ public class PlayerService extends Service {
         }
     }
 
-    public void UpdatePlayerActivityInstance() {
-        String title = playingSongPath.split("/")[playingSongPath.split("/").length - 1];
-//        Log.d("[linearity]","UpdatePlayerActivityInstance:Called");
-        if (this.playerActivityInstance != null){
-//            Log.d("[linearity]","UpdatePlayerActivityInstance:playerActivityInstance non null");
-            playerActivityInstance.progress_total.setText(getTimeStringFromMills(mediaPlayer.getDuration()));
-            playerActivityInstance.progress_played.setText(getTimeStringFromMills(mediaPlayer.getCurrentPosition()));
-            playerActivityInstance.progressBar.setMax(mediaPlayer.getDuration());
-            playerActivityInstance.titleTextView.setText(title);
+    public void updatePlayerActivityInstance() {
+        if (playerActivityInstance != null){
+            playerActivityInstance.updateSelf();
         }
-        if (playingSongPath.endsWith(".mp3")) {
-            try (MediaMetadataRetriever mmr = new MediaMetadataRetriever()){
-                mmr.setDataSource(playingSongPath);
-                String author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-                if (author != null) {
-                    if (playerActivityInstance != null){
-                        playerActivityInstance.authorTextView.setText(author);
-                    }
-                    if (useNotificationPlayer){
-                        notificationLayout.setTextViewText(R.id.notification_song_author, author);
-                    }
-                } else {
-                    if (playerActivityInstance != null){
-                        playerActivityInstance.authorTextView.setText("");
-                    }
-                    if (useNotificationPlayer){notificationLayout.setTextViewText(R.id.notification_song_author, "");}
-                }
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-        }
-        UpdatePauseStatus();
-        UpdateNotificationPlayer();
+        updatePauseStatus();
+        updateNotificationPlayer();
     }
 
     public static String getTimeStringFromMills(int mills){
@@ -362,7 +335,7 @@ public class PlayerService extends Service {
             return;
         }
         instance.prev_next(1);
-        UpdateNotificationPlayer();
+        updateNotificationPlayer();
     }
 
     public void PrevOnClick(){
@@ -373,19 +346,19 @@ public class PlayerService extends Service {
             return;
         }
         instance.prev_next(-1);
-        UpdateNotificationPlayer();
+        updateNotificationPlayer();
     }
 
     public void PauseOnClick(){
         Pause();
-        UpdateNotificationPlayer();
+        updateNotificationPlayer();
     }
 
     public void ChangeOrderOnClick(){
         instance.playOrder += 1;
         instance.playOrder %= 3;
         instance.UpdateOrderStatus();
-        UpdateNotificationPlayer();
+        updateNotificationPlayer();
         if (playOrder == 2){
             if (songIndexes == null){return;}
             refreshRandomPlayedSongs();
@@ -465,5 +438,9 @@ public class PlayerService extends Service {
         } else {
             registerReceiver(playerServiceBroadcastReceiver, iFilter);
         }
+    }
+
+    public void updateSelf(){
+
     }
 }

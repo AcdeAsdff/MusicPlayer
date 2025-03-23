@@ -1,6 +1,5 @@
 package com.linearity.musicplayer;
 
-import static com.linearity.musicplayer.Consts.LoggerTag;
 import static com.linearity.musicplayer.MainActivity.instance;
 import static com.linearity.musicplayer.PlayerService.intentCloseNotification;
 import static com.linearity.musicplayer.PlayerService.intentNext;
@@ -12,9 +11,6 @@ import static com.linearity.musicplayer.PlayerService.pathToListen2;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
-
-import java.util.Stack;
 
 public class PlayerServiceBroadcastReceiver extends BroadcastReceiver {
     @Override
