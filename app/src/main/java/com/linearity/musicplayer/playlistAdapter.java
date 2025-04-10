@@ -50,14 +50,11 @@ public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
             }
         }
         holder.titleTextView.setText(folderName);
-        holder.mainLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (isProgressBarChanging){return;}
-                MainActivity.playSong = holder.getAdapterPosition();
-                instance.Play(absPath);
-                MainActivity.isSongItemClicked = true;
-            }
+        holder.mainLayout.setOnClickListener(v -> {
+            if (isProgressBarChanging){return;}
+            MainActivity.playSong = holder.getAdapterPosition();
+            instance.Play(absPath);
+            MainActivity.isSongItemClicked = true;
         });
     }
 

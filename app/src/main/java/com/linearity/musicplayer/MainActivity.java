@@ -14,6 +14,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
@@ -110,7 +111,7 @@ public class MainActivity extends Activity {
             EditText folderLocation = addFolderView.findViewById(R.id.et_name);
             Button cancel = addFolderView.findViewById(R.id.addfolder_edittext_btn_cancel);
             Button confirm = addFolderView.findViewById(R.id.addfolder_edittext_btn_confirm);
-            folderLocation.setText("/sdcard/");
+            folderLocation.setText(Environment.getExternalStorageDirectory().getPath());
             cancel.setOnClickListener(v12 -> alertDialog.cancel());
             confirm.setOnClickListener(v1 -> {
                 File file = new File(String.valueOf(folderLocation.getText()));
@@ -125,7 +126,8 @@ public class MainActivity extends Activity {
                         folderList.clear();
                         folderList.addAll(sharedPreferences_PathData.getAll().keySet());
                         alertDialog.cancel();
-                        playerFolderAdapter.notifyItemInserted(folderList.size() - 1);
+//                        playerFolderAdapter.notifyItemInserted(folderList.size() - 1);
+                        playerFolderAdapter.notifyDataSetChanged();
                     }else {
                         Toast.makeText(MainActivity.this, R.string.path_exists, Toast.LENGTH_SHORT).show();
                     }
@@ -142,6 +144,7 @@ public class MainActivity extends Activity {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @SuppressLint("BatteryLife")
     public void requestIgnoreBatteryOptimizations() {
         try {

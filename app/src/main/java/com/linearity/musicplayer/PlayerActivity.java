@@ -246,7 +246,9 @@ public class PlayerActivity extends Activity {
 
     private static final String[] SUPPORTED_FORMATS = {
             ".wav",
-            ".mp3"
+            ".mp3",
+            ".flac",
+            ".ogg",
     };
     private void executeFile(@NonNull File f, Set<String> songSet, List<String> folders) {
         if (f.isDirectory()){

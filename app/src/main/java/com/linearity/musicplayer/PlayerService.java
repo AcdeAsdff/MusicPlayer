@@ -245,6 +245,7 @@ public class PlayerService extends Service {
         else {mediaPlayer = new MediaPlayer();}
 
         try {
+
             mediaPlayer.setDataSource(path);
             playingSongPath = path;
             mediaPlayer.prepareAsync();
@@ -310,6 +311,9 @@ public class PlayerService extends Service {
     }
 
     public static String getTimeStringFromMills(int mills){
+        if (mills < 0){
+            return "0:00";
+        }
         StringBuilder stringBuilder = new StringBuilder();
         int totalSeconds = mills / 1000;
         int totalMinutes = totalSeconds / 60;
