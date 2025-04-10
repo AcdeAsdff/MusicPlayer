@@ -32,6 +32,8 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+//import com.netease.cloudmusic.R;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -108,7 +110,7 @@ public class MainActivity extends Activity {
             EditText folderLocation = addFolderView.findViewById(R.id.et_name);
             Button cancel = addFolderView.findViewById(R.id.addfolder_edittext_btn_cancel);
             Button confirm = addFolderView.findViewById(R.id.addfolder_edittext_btn_confirm);
-            folderLocation.setText("/storage/emulated/0/");
+            folderLocation.setText("/sdcard/");
             cancel.setOnClickListener(v12 -> alertDialog.cancel());
             confirm.setOnClickListener(v1 -> {
                 File file = new File(String.valueOf(folderLocation.getText()));
@@ -181,7 +183,11 @@ public class MainActivity extends Activity {
         boolean isIgnoring = false;
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (powerManager != null) {
-            isIgnoring = powerManager.isIgnoringBatteryOptimizations(getPackageName());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                isIgnoring = powerManager.isIgnoringBatteryOptimizations(getPackageName());
+            }else {
+                return true;
+            }
         }
         return isIgnoring;
     }

@@ -140,7 +140,6 @@
             android:layout_below="@id/player_progressbar"
             android:textSize="36sp"
             android:translationX="48dp"
-            android:maxLines="1"
             android:fadingEdge="horizontal"/>
         <com.linearity.musicplayer.MarqueeNoFocusTextView
             android:singleLine="true"
@@ -149,7 +148,6 @@
             android:id="@+id/song_author"
             android:layout_width="wrap_content"
             android:layout_height="30dp"
-            android:maxLines="1"
             android:fadingEdge="horizontal"
             android:layout_toEndOf="@id/player_next"
             android:layout_alignParentEnd="true"

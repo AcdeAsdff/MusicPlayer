@@ -28,6 +28,8 @@ import android.widget.RemoteViews;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+//import com.netease.cloudmusic.R;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -94,13 +96,15 @@ public class PlayerService extends Service {
                         R.string.app_name,
                         PlayerServiceBroadcastReceiverIntent,
                         PendingIntent.FLAG_IMMUTABLE);
-        NotificationChannel nChannel = new NotificationChannel(playerChannelId, playerChannelId, NotificationManager.IMPORTANCE_LOW);
-        nChannel.setDescription(playerChannelId);
-
         initIntentFilter();
 
         nManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        nManager.createNotificationChannel(nChannel);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel nChannel = null;
+            nChannel = new NotificationChannel(playerChannelId, playerChannelId, NotificationManager.IMPORTANCE_LOW);
+            nChannel.setDescription(playerChannelId);
+            nManager.createNotificationChannel(nChannel);
+        }
         if (playerServiceBroadcastReceiver == null){
             playerServiceRegisterReceiver();
         }else {
@@ -405,9 +409,12 @@ public class PlayerService extends Service {
             initNotificationPlayer();
             nManager.notify(R.string.app_name,NotificationPlayer);
             if (Build.VERSION.SDK_INT >= 33){
-                registerReceiver(playerServiceBroadcastReceiver, iFilter, RECEIVER_VISIBLE_TO_INSTANT_APPS | Context.RECEIVER_EXPORTED);
-            } else{
+                registerReceiver(playerServiceBroadcastReceiver, iFilter,
+                        RECEIVER_VISIBLE_TO_INSTANT_APPS | Context.RECEIVER_EXPORTED);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 registerReceiver(playerServiceBroadcastReceiver, iFilter, RECEIVER_VISIBLE_TO_INSTANT_APPS);
+            }else {
+                registerReceiver(playerServiceBroadcastReceiver, iFilter);
             }
         }
     }

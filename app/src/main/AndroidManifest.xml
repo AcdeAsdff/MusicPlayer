@@ -22,21 +22,21 @@
         android:supportsRtl="true"
         tools:targetApi="26">
         <activity
-            android:name=".MainActivity"
+            android:name="com.linearity.musicplayer.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".PlayerActivity"
+        <activity android:name="com.linearity.musicplayer.PlayerActivity"
             android:multiprocess="false"
             android:launchMode="singleInstance"
             />
-        <service android:name=".PlayerService"
+        <service android:name="com.linearity.musicplayer.PlayerService"
             android:icon="@mipmap/ic_launcher_round"
             />
-        <receiver android:name=".PlayerServiceBroadcastReceiver"
+        <receiver android:name="com.linearity.musicplayer.PlayerServiceBroadcastReceiver"
             android:enabled="true"
             android:exported="false"
             android:icon="@mipmap/ic_launcher_round"

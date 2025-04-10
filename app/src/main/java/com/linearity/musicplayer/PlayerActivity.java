@@ -14,11 +14,13 @@ import static com.linearity.musicplayer.PlayerService.songIndexes;
 
 import android.app.Activity;
 import android.media.MediaMetadataRetriever;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -28,6 +30,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+//import com.netease.cloudmusic.R;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,7 +38,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -82,12 +87,12 @@ public class PlayerActivity extends Activity {
                 strArrReader.register(String[].class);
 
                 if (!strArrFile.exists()){
-                    List<String> Songlist = new ArrayList<>();
+                    Set<String> songSet = new HashSet<>();
                     for (File f : files) {
-                        executeFile(f,Songlist);
+                        executeFile(f,songSet);
                     }
-                    pathToListen2 = Songlist.toArray(new String[0]);
-                    if (!Songlist.isEmpty()){
+                    pathToListen2 = songSet.toArray(new String[0]);
+                    if (!songSet.isEmpty()){
                         try {
                             FileOutputStream fileOutputStream = new FileOutputStream(strArrFile);
                             Output output = new Output(fileOutputStream);
@@ -115,7 +120,12 @@ public class PlayerActivity extends Activity {
                 kryoInstance.register(int.class);
                 kryoInstance.register(int[].class);
 
-                File songIndexesFile = new File(getApplication().getDataDir(),pathToListen2.length + ".songIndexes");
+                File songIndexesFile = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    songIndexesFile = new File(getApplication().getDataDir(),pathToListen2.length + ".songIndexes");
+                }else {
+                    songIndexesFile = new File(getApplication().getCacheDir(),pathToListen2.length + ".songIndexes");
+                }
                 if (!songIndexesFile.exists()) {
                     songIndexes = new int[pathToListen2.length];
                     for (int i = 0; i < pathToListen2.length; i++) {
@@ -230,28 +240,41 @@ public class PlayerActivity extends Activity {
 //        instance.UpdatePauseStatus();
 
     }
-    private void executeFile(File f,List<String> Songlist) {
-        executeFile(f,Songlist,new ArrayList<>());
+    private void executeFile(File f,Set<String> songSet) {
+        executeFile(f,songSet,new ArrayList<>());
     }
 
-    private void executeFile(File f,List<String> Songlist,List<String> Folders) {
+    private static final String[] SUPPORTED_FORMATS = {
+            ".wav",
+            ".mp3"
+    };
+    private void executeFile(@NonNull File f, Set<String> songSet, List<String> folders) {
         if (f.isDirectory()){
-            if (Folders.contains(f.getAbsolutePath())){return;}
-            Folders.add(f.getAbsolutePath());
-            for (File f0:f.listFiles()){
-                executeFile(f0,Songlist,Folders);
+            if (folders.contains(f.getAbsolutePath())){return;}
+            folders.add(f.getAbsolutePath());
+            File[] subFiles = f.listFiles();
+            if (subFiles != null){
+                for (File f0:subFiles){
+                    executeFile(f0,songSet,folders);
+                }
             }
             return;
         }
         String fileAbs = f.getAbsolutePath();
-        String end = fileAbs.toLowerCase();
-        String[] arr = end.split("\\.");
-        end = arr[arr.length-1];
-        if (end.equals("mp3")
-                || end.equals("wav")) {//I don't want to check it.
-            Songlist.add(fileAbs);
+//        String end = fileAbs.toLowerCase();
+//        String[] arr = end.split("\\.");
+//        end = arr[arr.length-1];
+        for (String fileFormat:SUPPORTED_FORMATS){
+            if (fileAbs.endsWith(fileFormat)){
+                songSet.add(fileAbs);
+                break;
+            }
         }
-        else if(end.equals("musiclist") && f.canRead()){
+//        if (end.equals("mp3")
+//                || end.equals("wav")) {//I don't want to check it.
+//            songSet.add(fileAbs);
+//        }
+        if(fileAbs.endsWith(".musiclist") && f.canRead()){
             try {
                 FileInputStream fileInputStream = new FileInputStream(f);
                 byte[] fileBytes = new byte[(int) f.length()];
@@ -268,11 +291,14 @@ public class PlayerActivity extends Activity {
                     if (file1.exists()) {
                         //and I'll always check it.
                         String str1 = str.toLowerCase();
-                        if (str1.endsWith(".mp3") || str1.endsWith(".wav")){
-                            Songlist.add(str);
+                        for (String fileFormat:SUPPORTED_FORMATS){
+                            if (str1.endsWith(fileFormat)){
+                                songSet.add(str);
+                                break;
+                            }
                         }
-                        else if (file1.isDirectory() || str1.endsWith(".musiclist")){
-                            executeFile(file1,Songlist,Folders);
+                        if (file1.isDirectory() || str1.endsWith(".musiclist")){
+                            executeFile(file1,songSet,folders);
                         }
                     }
                 }
@@ -280,7 +306,7 @@ public class PlayerActivity extends Activity {
                 e.printStackTrace();
             }
         }
-//        Log.d("linearity", String.valueOf(Songlist.size()));
+//        Log.d("linearity", String.valueOf(songSet.size()));
     }
 
     @Override
