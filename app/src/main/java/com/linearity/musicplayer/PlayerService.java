@@ -1,6 +1,7 @@
 package com.linearity.musicplayer;
 
 import static android.app.Notification.FLAG_NO_CLEAR;
+import static com.linearity.musicplayer.Consts.LoggerTag;
 import static com.linearity.musicplayer.MainActivity.instance;
 import static com.linearity.musicplayer.MainActivity.isPreparing;
 import static com.linearity.musicplayer.MainActivity.isPrevNextClicked;
@@ -24,6 +25,7 @@ import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 import androidx.annotation.Nullable;
@@ -159,7 +161,10 @@ public class PlayerService extends Service {
         notificationLayoutSmall.setOnClickPendingIntent(R.id.close_notification, pendingIntentCloseNotification);
     }
     public void updateNotificationPlayer(){
-        if (useNotificationPlayer){initNotificationLayouts();}
+        Log.d(LoggerTag,"called updateNotificationPlayer");
+        if (useNotificationPlayer){
+            initNotificationLayouts();
+        }
         updatePauseStatus();
         UpdateOrderStatus();
 //        nManager.cancelAll();
@@ -181,6 +186,8 @@ public class PlayerService extends Service {
         }catch (IOException e){
             e.printStackTrace();
         }
+
+        initNotificationPlayer();
         nManager.notify(R.string.app_name, NotificationPlayer);
     }
     public void updatePauseStatus(){

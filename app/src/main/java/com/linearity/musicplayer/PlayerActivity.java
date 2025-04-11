@@ -470,7 +470,7 @@ public class PlayerActivity extends Activity {
             if (playingSongPath.startsWith("http://") || playingSongPath.startsWith("https://")){
                 mmr.setDataSource(playingSongPath,new HashMap<>());
             }
-            else{
+            else if (new File(playingSongPath).exists()){
                 mmr.setDataSource(playingSongPath);
             }
             String author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
