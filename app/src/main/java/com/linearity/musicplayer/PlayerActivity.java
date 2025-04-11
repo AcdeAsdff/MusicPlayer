@@ -463,34 +463,33 @@ public class PlayerActivity extends Activity {
             e.printStackTrace();
         }
         this.titleTextView.setText(title);
-        if (playingSongPath.endsWith(".mp3")) {
-            try (MediaMetadataRetriever mmr = new MediaMetadataRetriever()){
+        //maybe more than mp3 can set image for itself.
+        try (MediaMetadataRetriever mmr = new MediaMetadataRetriever()){
 
-                if (playingSongPath.startsWith("http://") || playingSongPath.startsWith("https://")){
-                    mmr.setDataSource(playingSongPath,new HashMap<>());
-                }
-                else{
-                    mmr.setDataSource(playingSongPath);
-                }
-                String author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-                if (author != null) {
-                    this.authorTextView.setText(author);
-                    if (instance != null){
-                        if (instance.useNotificationPlayer){
-                            instance.notificationLayout.setTextViewText(R.id.notification_song_author, author);
-                        }
-                    }
-                } else {
-                    this.authorTextView.setText("");
-                    if (instance != null){
-                        if (instance.useNotificationPlayer){
-                            instance.notificationLayout.setTextViewText(R.id.notification_song_author, "");
-                        }
-                    }
-                }
-            }catch (Exception e){
-                e.printStackTrace();
+            if (playingSongPath.startsWith("http://") || playingSongPath.startsWith("https://")){
+                mmr.setDataSource(playingSongPath,new HashMap<>());
             }
+            else{
+                mmr.setDataSource(playingSongPath);
+            }
+            String author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+            if (author != null) {
+                this.authorTextView.setText(author);
+                if (instance != null){
+                    if (instance.useNotificationPlayer){
+                        instance.notificationLayout.setTextViewText(R.id.notification_song_author, author);
+                    }
+                }
+            } else {
+                this.authorTextView.setText("");
+                if (instance != null){
+                    if (instance.useNotificationPlayer){
+                        instance.notificationLayout.setTextViewText(R.id.notification_song_author, "");
+                    }
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
         }
     }
 }
