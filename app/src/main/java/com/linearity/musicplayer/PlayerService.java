@@ -9,6 +9,8 @@ import static com.linearity.musicplayer.MainActivity.mediaPlayer;
 import static com.linearity.musicplayer.MainActivity.playSong;
 import static com.linearity.musicplayer.MainActivity.playerChannelId;
 import static com.linearity.musicplayer.MainActivity.playingSongPath;
+import static com.linearity.musicplayer.MainActivity.remoteFilesFlag;
+import static com.linearity.musicplayer.playerFolderAdapter.fileNameFromAbsPath;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -23,6 +25,7 @@ import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 import androidx.annotation.Nullable;
@@ -32,6 +35,7 @@ import androidx.core.app.NotificationCompat;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.security.SecureRandom;
 import java.util.LinkedList;
 import java.util.Random;
@@ -164,7 +168,7 @@ public class PlayerService extends Service {
 //        nManager.cancelAll();
         if (!useNotificationPlayer){return;}
         String title = playingSongPath.split("/")[playingSongPath.split("/").length - 1];
-        notificationLayout.setTextViewText(R.id.notification_song_title, title);
+        notificationLayout.setTextViewText(R.id.notification_song_title, fileNameFromAbsPath(title));
         notificationLayout.setTextViewText(R.id.notification_song_author, "");
         notificationLayout.setImageViewBitmap(R.id.notification_song_image, null);
         try (MediaMetadataRetriever mmr = new MediaMetadataRetriever()){
@@ -177,11 +181,10 @@ public class PlayerService extends Service {
             } else {
                 notificationLayout.setImageViewBitmap(R.id.notification_song_image, null);
             }
-            initNotificationPlayer();
-            nManager.notify(R.string.app_name, NotificationPlayer);
         }catch (IOException e){
             e.printStackTrace();
         }
+        nManager.notify(R.string.app_name, NotificationPlayer);
     }
     public void updatePauseStatus(){
         if (mediaPlayer.isPlaying()){
@@ -233,6 +236,14 @@ public class PlayerService extends Service {
     }
 
     public void Play(String path){
+//        Log.d("[linearity]","playing " + path);
+//        if (remoteFilesFlag){
+//            try {
+//                Log.d("[linearity]","decoded as " + URLDecoder.decode(path,"utf-8"));
+//            }catch (Exception e){
+//                e.printStackTrace();
+//            }
+//        }
         if (mediaPlayer.isPlaying()){
             mediaPlayer.stop();
         }

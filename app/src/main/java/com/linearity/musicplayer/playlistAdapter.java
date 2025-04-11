@@ -2,6 +2,7 @@ package com.linearity.musicplayer;
 
 import static com.linearity.musicplayer.MainActivity.instance;
 import static com.linearity.musicplayer.MainActivity.isProgressBarChanging;
+import static com.linearity.musicplayer.playerFolderAdapter.fileNameFromAbsPath;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 //import com.netease.cloudmusic.R;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.Objects;
 
 public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
@@ -40,21 +43,17 @@ public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
     public void onBindViewHolder(VH holder, int position) {
         String absPath = mDatas[position];
         holder.authorTextView.setText(absPath);
-        String folderName = "";
-        String[] folderPathList = absPath.split("/");
-        if (!Objects.equals(folderPathList[folderPathList.length - 1], "")){
-            folderName = folderPathList[folderPathList.length - 1];
-        }else {
-            if (folderPathList.length >= 2){
-                folderName = folderPathList[folderPathList.length - 2];
-            }
-        }
+        String folderName = fileNameFromAbsPath(absPath);
         holder.titleTextView.setText(folderName);
         holder.mainLayout.setOnClickListener(v -> {
-            if (isProgressBarChanging){return;}
-            MainActivity.playSong = holder.getAdapterPosition();
-            instance.Play(absPath);
-            MainActivity.isSongItemClicked = true;
+            try {
+                if (isProgressBarChanging){return;}
+                MainActivity.playSong = holder.getAdapterPosition();
+                instance.Play(absPath);
+                MainActivity.isSongItemClicked = true;
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         });
     }
 

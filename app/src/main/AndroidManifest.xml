@@ -10,6 +10,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+<!--    only for testing(i want to access music on pc without copying)-->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:requestLegacyExternalStorage="true"
         android:theme="@android:style/Theme.NoTitleBar"

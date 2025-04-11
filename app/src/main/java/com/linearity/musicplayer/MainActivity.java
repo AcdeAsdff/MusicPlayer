@@ -36,12 +36,17 @@ import androidx.recyclerview.widget.RecyclerView;
 //import com.netease.cloudmusic.R;
 
 import java.io.File;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Timer;
+import java.util.function.Consumer;
 
 public class MainActivity extends Activity {
+    public static boolean remoteFilesFlag = false;
+    public static String serverURL = "";
     private static final String[] REQUIRES_PERMISSIONS;
     static {
 
@@ -114,24 +119,58 @@ public class MainActivity extends Activity {
             folderLocation.setText(Environment.getExternalStorageDirectory().getPath());
             cancel.setOnClickListener(v12 -> alertDialog.cancel());
             confirm.setOnClickListener(v1 -> {
-                File file = new File(String.valueOf(folderLocation.getText()));
-
+                String folderName = String.valueOf(folderLocation.getText());
+                File file = new File(folderName);
                 if (file.exists()){
 //                            Log.d("[linearity]", "onClick: " + file.getAbsolutePath());
                     if (!sharedPreferences_PathData.contains(file.getAbsolutePath())){
-                        SharedPreferences.Editor sharedPreferencesEditor_PathData = sharedPreferences_PathData.edit();
-                        sharedPreferencesEditor_PathData.putInt(file.getAbsolutePath(),1);
-                        sharedPreferencesEditor_PathData.apply();
-                        sharedPreferences_PathData = getSharedPreferences("PlayerPathData", MODE_PRIVATE);
-                        folderList.clear();
-                        folderList.addAll(sharedPreferences_PathData.getAll().keySet());
-                        alertDialog.cancel();
+                        {
+                            File file1 = new File(folderName);
+                            SharedPreferences.Editor sharedPreferencesEditor_PathData = sharedPreferences_PathData.edit();
+                            sharedPreferencesEditor_PathData.putInt(file1.getAbsolutePath(),1);
+                            sharedPreferencesEditor_PathData.apply();
+                            sharedPreferences_PathData = getSharedPreferences("PlayerPathData", MODE_PRIVATE);
+                            folderList.clear();
+                            folderList.addAll(sharedPreferences_PathData.getAll().keySet());
+                            alertDialog.cancel();
 //                        playerFolderAdapter.notifyItemInserted(folderList.size() - 1);
-                        playerFolderAdapter.notifyDataSetChanged();
+                            playerFolderAdapter.notifyDataSetChanged();
+                        }
                     }else {
                         Toast.makeText(MainActivity.this, R.string.path_exists, Toast.LENGTH_SHORT).show();
                     }
-                }else {
+                }else if (folderName.startsWith("http://") || folderName.startsWith("https://")){
+
+                    new Thread(()->{
+                        try {
+                            URL url = new URL(folderName);
+                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            conn.setRequestMethod("GET");
+                            if (conn.getResponseCode() == 200){
+                                {
+                                    SharedPreferences.Editor sharedPreferencesEditor_PathData = sharedPreferences_PathData.edit();
+                                    sharedPreferencesEditor_PathData.putInt(folderName,1);
+                                    sharedPreferencesEditor_PathData.apply();
+                                    sharedPreferences_PathData = getSharedPreferences("PlayerPathData", MODE_PRIVATE);
+                                    folderList.clear();
+                                    folderList.addAll(sharedPreferences_PathData.getAll().keySet());
+                                    alertDialog.cancel();
+                                    runOnUiThread(() -> playerFolderAdapter.notifyDataSetChanged());
+
+                                }
+//                                addFolderRunnableHTTP.accept(folderName);
+                            } else {
+                                runOnUiThread(() -> Toast.makeText(MainActivity.this, R.string.path_not_found, Toast.LENGTH_SHORT).show());
+                            }
+                        }catch (Exception e){
+//                            notFoundRunnable.run();
+                            Log.e("[linearity]","failed for " + folderName);
+                            e.printStackTrace();
+                        }
+                    }).start();
+
+                }
+                else {
                     Toast.makeText(MainActivity.this, R.string.path_not_found, Toast.LENGTH_SHORT).show();
                 }
             });

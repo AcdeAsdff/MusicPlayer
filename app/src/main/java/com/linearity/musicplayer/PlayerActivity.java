@@ -8,17 +8,21 @@ import static com.linearity.musicplayer.MainActivity.isPreparing;
 import static com.linearity.musicplayer.MainActivity.isProgressBarChanging;
 import static com.linearity.musicplayer.MainActivity.mediaPlayer;
 import static com.linearity.musicplayer.MainActivity.playingSongPath;
+import static com.linearity.musicplayer.MainActivity.remoteFilesFlag;
+import static com.linearity.musicplayer.MainActivity.serverURL;
 import static com.linearity.musicplayer.PlayerService.getTimeStringFromMills;
 import static com.linearity.musicplayer.PlayerService.pathToListen2;
 import static com.linearity.musicplayer.PlayerService.songIndexes;
 
 import android.app.Activity;
+import android.app.Application;
 import android.media.MediaMetadataRetriever;
-import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,12 +36,22 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 //import com.netease.cloudmusic.R;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -60,6 +74,59 @@ public class PlayerActivity extends Activity {
     ImageView pause_continue;
     ImageView changeOrder;
 
+    public static void initSongIndexes(Application application){
+        Kryo kryoInstance;
+        kryoInstance = new Kryo();
+        kryoInstance.register(int.class);
+        kryoInstance.register(int[].class);
+
+        File songIndexesFile;
+        songIndexesFile = new File(application.getCacheDir(),pathToListen2.length + ".songIndexes");
+        if (!songIndexesFile.exists()) {
+            songIndexes = new int[pathToListen2.length];
+            for (int i = 0; i < pathToListen2.length; i++) {
+                songIndexes[i]=i;
+            }
+            try {
+                if (!songIndexesFile.createNewFile()){
+                    throw new IOException("cannot create indexes file");
+                }
+
+                FileOutputStream fileOutputStream = new FileOutputStream(songIndexesFile);
+                Output output = new Output(fileOutputStream);
+                kryoInstance.writeObject(output,songIndexes);
+                output.close();
+                fileOutputStream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        else {
+            try {
+                FileInputStream fileInputStream = new FileInputStream(songIndexesFile);
+                Input input = new Input(fileInputStream);
+                songIndexes = kryoInstance.readObject(input, int[].class);
+                input.close();
+                fileInputStream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+
+    public static String readStringFromInputStream(InputStream in) throws IOException {
+        StringBuilder textBuilder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader
+                (in, StandardCharsets.UTF_8))) {
+            int c;
+            while ((c = reader.read()) != -1) {
+                textBuilder.append((char) c);
+            }
+        }
+        return textBuilder.toString();
+    }
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         if (instance != null){
@@ -87,12 +154,12 @@ public class PlayerActivity extends Activity {
                 strArrReader.register(String[].class);
 
                 if (!strArrFile.exists()){
-                    Set<String> songSet = new HashSet<>();
+                    Collection<String> songCollection = new ArrayList<>();
                     for (File f : files) {
-                        executeFile(f,songSet);
+                        executeFile(f,songCollection);
                     }
-                    pathToListen2 = songSet.toArray(new String[0]);
-                    if (!songSet.isEmpty()){
+                    pathToListen2 = songCollection.toArray(new String[0]);
+                    if (!songCollection.isEmpty()){
                         try {
                             FileOutputStream fileOutputStream = new FileOutputStream(strArrFile);
                             Output output = new Output(fileOutputStream);
@@ -115,48 +182,7 @@ public class PlayerActivity extends Activity {
                     }
                 }
 
-                Kryo kryoInstance;
-                kryoInstance = new Kryo();
-                kryoInstance.register(int.class);
-                kryoInstance.register(int[].class);
-
-                File songIndexesFile = null;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    songIndexesFile = new File(getApplication().getDataDir(),pathToListen2.length + ".songIndexes");
-                }else {
-                    songIndexesFile = new File(getApplication().getCacheDir(),pathToListen2.length + ".songIndexes");
-                }
-                if (!songIndexesFile.exists()) {
-                    songIndexes = new int[pathToListen2.length];
-                    for (int i = 0; i < pathToListen2.length; i++) {
-                        songIndexes[i]=i;
-                    }
-                    try {
-                        if (!songIndexesFile.createNewFile()){
-                            throw new IOException("cannot create indexes file");
-                        }
-
-                        FileOutputStream fileOutputStream = new FileOutputStream(songIndexesFile);
-                        Output output = new Output(fileOutputStream);
-                        kryoInstance.writeObject(output,songIndexes);
-                        output.close();
-                        fileOutputStream.close();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-                else {
-                    try {
-                        FileInputStream fileInputStream = new FileInputStream(songIndexesFile);
-                        Input input = new Input(fileInputStream);
-                        songIndexes = kryoInstance.readObject(input, int[].class);
-                        input.close();
-                        fileInputStream.close();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                }
+                initSongIndexes(getApplication());
                 RecyclerView recyclerView = findViewById(R.id.playSongs);
                 LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
                 recyclerView.setLayoutManager(linearLayoutManager);
@@ -165,6 +191,86 @@ public class PlayerActivity extends Activity {
                 playlistAdapter PlaylistAdapter = new playlistAdapter(pathToListen2);
                 recyclerView.setAdapter(PlaylistAdapter);
 
+            }
+        }
+        else if (PlayerActivityFolderAbsPath != null){
+            if (PlayerActivityFolderAbsPath.startsWith("http://") || PlayerActivityFolderAbsPath.startsWith("https://")){
+                serverURL = PlayerActivityFolderAbsPath;
+                remoteFilesFlag = true;
+                new Thread(()->{
+                    try {
+                        URL url = new URL(PlayerActivityFolderAbsPath);
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestMethod("GET");
+
+                        if (conn.getResponseCode() == 200){
+
+                            Log.d("[linearity]", String.valueOf(url));
+                            Log.d("[linearity]",conn.getResponseMessage());
+
+                            String outText = readStringFromInputStream(conn.getInputStream());
+                            String[] paths = outText.replace("\r\n","\n").split("\n");
+                            Log.d("[linearity]", Arrays.toString(paths));
+                            Set<String> pathSet = new HashSet<>();
+                            //no recursive here
+                            for (String folderPath:paths){
+
+                                url = new URL(PlayerActivityFolderAbsPath);
+                                String urlStr = url.getProtocol() + "://" + url.getHost() + ":" + url.getPort() + "/" + URLEncoder.encode(folderPath,"utf-8");
+                                Log.d("[linearity]","accessing "+ urlStr);
+                                url = new URL(urlStr);
+                                conn.disconnect();
+                                conn = (HttpURLConnection) url.openConnection();
+                                conn.setRequestProperty("content-type", "text/plain; charset=utf-8");
+                                conn.setRequestMethod("GET");
+                                conn.connect();
+
+                                outText = readStringFromInputStream(conn.getInputStream());
+                                String[] musicPaths = outText.replace("\r\n","\n").split("\n");
+
+                                Log.d("[linearity]", Arrays.toString(musicPaths));
+                                for (String s:musicPaths){
+                                    boolean supportedFormatFlag = false;
+                                    for (String formatEnding:SUPPORTED_FORMATS){
+                                        if (s.endsWith(formatEnding)){
+                                            supportedFormatFlag = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!supportedFormatFlag){
+                                        continue;
+                                    }
+                                    String realPath = folderPath + (folderPath.endsWith("/")?"":"/")+s;
+                                    pathSet.add(url.getProtocol() + "://"
+                                            + url.getHost() + ":" + url.getPort() + "/"
+                                            + URLEncoder.encode(realPath,"utf-8").replace("+","%20"));
+                                }
+                            }
+                            conn.disconnect();
+                            pathToListen2 = pathSet.toArray(new String[0]);
+                            Log.d("[linearity]", Arrays.toString(pathToListen2));
+                            runOnUiThread(()->{
+                                initSongIndexes(getApplication());
+                                RecyclerView recyclerView = findViewById(R.id.playSongs);
+                                LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+                                recyclerView.setLayoutManager(linearLayoutManager);
+                                recyclerView.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
+                                recyclerView.setItemAnimator(new DefaultItemAnimator());
+                                playlistAdapter PlaylistAdapter = new playlistAdapter(pathToListen2);
+                                recyclerView.setAdapter(PlaylistAdapter);
+                            });
+                        } else {
+                            runOnUiThread(() ->Toast.makeText(PlayerActivity.this, R.string.path_not_found, Toast.LENGTH_SHORT).show());
+                        }
+                    }catch (Exception e){
+//                            notFoundRunnable.run();
+                        e.printStackTrace();
+                    }
+                }).start();
+            }
+            else {
+                serverURL = "";
+                remoteFilesFlag = false;
             }
         }
         titleTextView = findViewById(R.id.song_title);
@@ -240,7 +346,7 @@ public class PlayerActivity extends Activity {
 //        instance.UpdatePauseStatus();
 
     }
-    private void executeFile(File f,Set<String> songSet) {
+    private void executeFile(File f,Collection<String> songSet) {
         executeFile(f,songSet,new ArrayList<>());
     }
 
@@ -250,9 +356,11 @@ public class PlayerActivity extends Activity {
             ".flac",
             ".ogg",
     };
-    private void executeFile(@NonNull File f, Set<String> songSet, List<String> folders) {
+    private void executeFile(@NonNull File f, Collection<String> songSet, List<String> folders) {
         if (f.isDirectory()){
-            if (folders.contains(f.getAbsolutePath())){return;}
+            if (folders.contains(f.getAbsolutePath())){
+                return;
+            }
             folders.add(f.getAbsolutePath());
             File[] subFiles = f.listFiles();
             if (subFiles != null){
@@ -263,26 +371,20 @@ public class PlayerActivity extends Activity {
             return;
         }
         String fileAbs = f.getAbsolutePath();
-//        String end = fileAbs.toLowerCase();
-//        String[] arr = end.split("\\.");
-//        end = arr[arr.length-1];
         for (String fileFormat:SUPPORTED_FORMATS){
             if (fileAbs.endsWith(fileFormat)){
                 songSet.add(fileAbs);
                 break;
             }
         }
-//        if (end.equals("mp3")
-//                || end.equals("wav")) {//I don't want to check it.
-//            songSet.add(fileAbs);
-//        }
-        if(fileAbs.endsWith(".musiclist") && f.canRead()){
+        if(fileAbs.toLowerCase().endsWith(".musiclist") && f.canRead()){
             try {
                 FileInputStream fileInputStream = new FileInputStream(f);
                 byte[] fileBytes = new byte[(int) f.length()];
                 fileInputStream.read(fileBytes);
                 fileInputStream.close();
                 String fileStr = new String(fileBytes, StandardCharsets.UTF_8);
+                fileStr = fileStr.replace("\r\n","\n");
                 for (String str:fileStr.split("\n")){
 //                                str = str.replace("\n","\\\n");
                     if (str.isEmpty()){continue;}
@@ -308,7 +410,6 @@ public class PlayerActivity extends Activity {
                 e.printStackTrace();
             }
         }
-//        Log.d("linearity", String.valueOf(songSet.size()));
     }
 
     @Override
@@ -346,16 +447,30 @@ public class PlayerActivity extends Activity {
     }
 
     public void updateSelf() {
+
         String title = playingSongPath.split("/")[playingSongPath.split("/").length - 1];
 //        Log.d("[linearity]","UpdatePlayerActivityInstance:Called");
 
         this.progress_total.setText(getTimeStringFromMills(mediaPlayer.getDuration()));
         this.progress_played.setText(getTimeStringFromMills(mediaPlayer.getCurrentPosition()));
         this.progressBar.setMax(mediaPlayer.getDuration());
+        try {
+            if (remoteFilesFlag){
+                title = URLDecoder.decode(title,"utf-8");
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         this.titleTextView.setText(title);
         if (playingSongPath.endsWith(".mp3")) {
             try (MediaMetadataRetriever mmr = new MediaMetadataRetriever()){
-                mmr.setDataSource(playingSongPath);
+
+                if (playingSongPath.startsWith("http://") || playingSongPath.startsWith("https://")){
+                    mmr.setDataSource(playingSongPath,new HashMap<>());
+                }
+                else{
+                    mmr.setDataSource(playingSongPath);
+                }
                 String author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
                 if (author != null) {
                     this.authorTextView.setText(author);

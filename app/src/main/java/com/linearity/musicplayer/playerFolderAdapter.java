@@ -4,11 +4,13 @@ import static com.linearity.musicplayer.MainActivity.PlayerActivityFolder;
 import static com.linearity.musicplayer.MainActivity.PlayerActivityFolderAbsPath;
 import static com.linearity.musicplayer.MainActivity.folderList;
 import static com.linearity.musicplayer.MainActivity.mainActivityInstance;
+import static com.linearity.musicplayer.MainActivity.remoteFilesFlag;
 import static com.linearity.musicplayer.MainActivity.sharedPreferences_PathData;
 
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +24,8 @@ import androidx.recyclerview.widget.RecyclerView;
 //import com.netease.cloudmusic.R;
 
 import java.io.File;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
@@ -45,19 +49,34 @@ public class playerFolderAdapter extends RecyclerView.Adapter<playerFolderAdapte
     }
 
 
+    public static String fileNameFromAbsPath(String absPath){
+        String fileName = "";
+        String[] folderPathList;
+        try {
+            absPath = URLDecoder.decode(absPath, "utf-8");
+        }catch (Exception e){
+            Log.e("[linearity]","absPath");
+            e.printStackTrace();
+        }
+        if (absPath.endsWith("/")){
+            folderPathList = absPath.substring(0,absPath.length() - 1).split("/");
+        }else {
+            folderPathList = absPath.split("/");
+        }
+        if (!Objects.equals(folderPathList[folderPathList.length - 1], "")){
+            fileName = folderPathList[folderPathList.length - 1];
+        }else {
+            if (folderPathList.length >= 2){
+                fileName = folderPathList[folderPathList.length - 2];
+            }
+        }
+        return fileName;
+    }
     @Override
     public void onBindViewHolder(VH holder, int position) {
         String absPath = folderList.get(position);
         holder.absPathTextView.setText(absPath);
-        String folderName = "";
-        String[] folderPathList = absPath.split("/");
-        if (!Objects.equals(folderPathList[folderPathList.length - 1], "")){
-            folderName = folderPathList[folderPathList.length - 1];
-        }else {
-            if (folderPathList.length >= 2){
-                folderName = folderPathList[folderPathList.length - 2];
-            }
-        }
+        String folderName = fileNameFromAbsPath(absPath);
         holder.titleTextView.setText(folderName);
         holder.mainLayout.setOnLongClickListener(v -> {
             View deleteFolderView = View.inflate(v.getContext(), R.layout.deletefolder_confirm, null);
