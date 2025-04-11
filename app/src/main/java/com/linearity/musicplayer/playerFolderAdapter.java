@@ -1,12 +1,13 @@
 package com.linearity.musicplayer;
 
+import static com.linearity.musicplayer.Consts.LoggerTag;
 import static com.linearity.musicplayer.MainActivity.PlayerActivityFolder;
 import static com.linearity.musicplayer.MainActivity.PlayerActivityFolderAbsPath;
 import static com.linearity.musicplayer.MainActivity.folderList;
 import static com.linearity.musicplayer.MainActivity.mainActivityInstance;
-import static com.linearity.musicplayer.MainActivity.remoteFilesFlag;
 import static com.linearity.musicplayer.MainActivity.sharedPreferences_PathData;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -25,7 +26,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,7 +55,7 @@ public class playerFolderAdapter extends RecyclerView.Adapter<playerFolderAdapte
         try {
             absPath = URLDecoder.decode(absPath, "utf-8");
         }catch (Exception e){
-            Log.e("[linearity]","absPath");
+            Log.e(LoggerTag,"absPath");
             e.printStackTrace();
         }
         if (absPath.endsWith("/")){
@@ -72,6 +72,7 @@ public class playerFolderAdapter extends RecyclerView.Adapter<playerFolderAdapte
         }
         return fileName;
     }
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     public void onBindViewHolder(VH holder, int position) {
         String absPath = folderList.get(position);
@@ -118,9 +119,8 @@ public class playerFolderAdapter extends RecyclerView.Adapter<playerFolderAdapte
             return false;
 
         });
-        String finalFolderName = folderName;
         holder.mainLayout.setOnClickListener(v -> {
-            PlayerActivityFolder = finalFolderName;
+            PlayerActivityFolder = folderName;
             PlayerActivityFolderAbsPath = absPath;
             Intent intent = new Intent(v.getContext(), PlayerActivity.class);
             mainActivityInstance.startActivity(intent);//stole this sill instead of Broadcast from slimefun plugins lol

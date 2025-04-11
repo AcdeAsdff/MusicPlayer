@@ -15,9 +15,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 //import com.netease.cloudmusic.R;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.Objects;
 
 public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
 
@@ -33,7 +30,7 @@ public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
         }
     }
 
-    private String[] mDatas;//songs abs path
+    private final String[] mDatas;//songs abs path
     public playlistAdapter(String[] data) {
         this.mDatas = data;
     }

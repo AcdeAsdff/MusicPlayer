@@ -3,6 +3,8 @@ package com.linearity.musicplayer;
 import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
+import static com.linearity.musicplayer.Consts.LoggerTag;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -42,7 +44,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Timer;
-import java.util.function.Consumer;
 
 public class MainActivity extends Activity {
     public static boolean remoteFilesFlag = false;
@@ -88,6 +89,7 @@ public class MainActivity extends Activity {
     public static boolean isPreparing = true;
     public static MainActivity mainActivityInstance;
 
+    @SuppressLint("NotifyDataSetChanged")
     @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -122,7 +124,7 @@ public class MainActivity extends Activity {
                 String folderName = String.valueOf(folderLocation.getText());
                 File file = new File(folderName);
                 if (file.exists()){
-//                            Log.d("[linearity]", "onClick: " + file.getAbsolutePath());
+//                            Log.d(LoggerTag, "onClick: " + file.getAbsolutePath());
                     if (!sharedPreferences_PathData.contains(file.getAbsolutePath())){
                         {
                             File file1 = new File(folderName);
@@ -155,7 +157,7 @@ public class MainActivity extends Activity {
                                     folderList.clear();
                                     folderList.addAll(sharedPreferences_PathData.getAll().keySet());
                                     alertDialog.cancel();
-                                    runOnUiThread(() -> playerFolderAdapter.notifyDataSetChanged());
+                                    runOnUiThread(playerFolderAdapter::notifyDataSetChanged);
 
                                 }
 //                                addFolderRunnableHTTP.accept(folderName);
@@ -164,7 +166,7 @@ public class MainActivity extends Activity {
                             }
                         }catch (Exception e){
 //                            notFoundRunnable.run();
-                            Log.e("[linearity]","failed for " + folderName);
+                            Log.e(LoggerTag,"failed for " + folderName);
                             e.printStackTrace();
                         }
                     }).start();
@@ -213,7 +215,7 @@ public class MainActivity extends Activity {
         for (int i=0;i<permissions.length;i++){
             if (grantResults[i] == PERMISSION_DENIED && !Objects.equals(permissions[i], Manifest.permission.MANAGE_EXTERNAL_STORAGE)){
                 denied = true;
-                Log.d("[linearity]","Permission denied : " + permissions[i]);//break
+                Log.d(LoggerTag,"Permission denied : " + permissions[i]);//break
             }
         }
         if (denied){

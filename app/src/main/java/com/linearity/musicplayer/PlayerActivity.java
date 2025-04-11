@@ -1,5 +1,6 @@
 package com.linearity.musicplayer;
 
+import static com.linearity.musicplayer.Consts.LoggerTag;
 import static com.linearity.musicplayer.MainActivity.PlayerActivityFolder;
 import static com.linearity.musicplayer.MainActivity.PlayerActivityFolderAbsPath;
 import static com.linearity.musicplayer.MainActivity.PlayerActivityTimer;
@@ -205,19 +206,19 @@ public class PlayerActivity extends Activity {
 
                         if (conn.getResponseCode() == 200){
 
-                            Log.d("[linearity]", String.valueOf(url));
-                            Log.d("[linearity]",conn.getResponseMessage());
+                            Log.d(LoggerTag, String.valueOf(url));
+                            Log.d(LoggerTag,conn.getResponseMessage());
 
                             String outText = readStringFromInputStream(conn.getInputStream());
                             String[] paths = outText.replace("\r\n","\n").split("\n");
-                            Log.d("[linearity]", Arrays.toString(paths));
+                            Log.d(LoggerTag, Arrays.toString(paths));
                             Set<String> pathSet = new HashSet<>();
                             //no recursive here
                             for (String folderPath:paths){
 
                                 url = new URL(PlayerActivityFolderAbsPath);
                                 String urlStr = url.getProtocol() + "://" + url.getHost() + ":" + url.getPort() + "/" + URLEncoder.encode(folderPath,"utf-8");
-                                Log.d("[linearity]","accessing "+ urlStr);
+                                Log.d(LoggerTag,"accessing "+ urlStr);
                                 url = new URL(urlStr);
                                 conn.disconnect();
                                 conn = (HttpURLConnection) url.openConnection();
@@ -228,7 +229,7 @@ public class PlayerActivity extends Activity {
                                 outText = readStringFromInputStream(conn.getInputStream());
                                 String[] musicPaths = outText.replace("\r\n","\n").split("\n");
 
-                                Log.d("[linearity]", Arrays.toString(musicPaths));
+                                Log.d(LoggerTag, Arrays.toString(musicPaths));
                                 for (String s:musicPaths){
                                     boolean supportedFormatFlag = false;
                                     for (String formatEnding:SUPPORTED_FORMATS){
@@ -248,7 +249,7 @@ public class PlayerActivity extends Activity {
                             }
                             conn.disconnect();
                             pathToListen2 = pathSet.toArray(new String[0]);
-                            Log.d("[linearity]", Arrays.toString(pathToListen2));
+                            Log.d(LoggerTag, Arrays.toString(pathToListen2));
                             runOnUiThread(()->{
                                 initSongIndexes(getApplication());
                                 RecyclerView recyclerView = findViewById(R.id.playSongs);
@@ -449,7 +450,7 @@ public class PlayerActivity extends Activity {
     public void updateSelf() {
 
         String title = playingSongPath.split("/")[playingSongPath.split("/").length - 1];
-//        Log.d("[linearity]","UpdatePlayerActivityInstance:Called");
+//        Log.d(LoggerTag,"UpdatePlayerActivityInstance:Called");
 
         this.progress_total.setText(getTimeStringFromMills(mediaPlayer.getDuration()));
         this.progress_played.setText(getTimeStringFromMills(mediaPlayer.getCurrentPosition()));
