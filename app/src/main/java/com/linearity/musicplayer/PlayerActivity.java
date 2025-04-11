@@ -75,17 +75,18 @@ public class PlayerActivity extends Activity {
     ImageView pause_continue;
     ImageView changeOrder;
 
-    public static void initSongIndexes(Application application){
+    /*result will be at songIndexes*/
+    public static void initSongIndexes(Application application,String[] songPaths /*i mean pathToListen2*/){
         Kryo kryoInstance;
         kryoInstance = new Kryo();
         kryoInstance.register(int.class);
         kryoInstance.register(int[].class);
 
         File songIndexesFile;
-        songIndexesFile = new File(application.getCacheDir(),pathToListen2.length + ".songIndexes");
+        songIndexesFile = new File(application.getCacheDir(),songPaths.length + ".songIndexes");
         if (!songIndexesFile.exists()) {
-            songIndexes = new int[pathToListen2.length];
-            for (int i = 0; i < pathToListen2.length; i++) {
+            songIndexes = new int[songPaths.length];
+            for (int i = 0; i < songPaths.length; i++) {
                 songIndexes[i]=i;
             }
             try {
@@ -183,7 +184,7 @@ public class PlayerActivity extends Activity {
                     }
                 }
 
-                initSongIndexes(getApplication());
+                initSongIndexes(getApplication(),pathToListen2);
                 RecyclerView recyclerView = findViewById(R.id.playSongs);
                 LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
                 recyclerView.setLayoutManager(linearLayoutManager);
@@ -251,7 +252,7 @@ public class PlayerActivity extends Activity {
                             pathToListen2 = pathSet.toArray(new String[0]);
                             Log.d(LoggerTag, Arrays.toString(pathToListen2));
                             runOnUiThread(()->{
-                                initSongIndexes(getApplication());
+                                initSongIndexes(getApplication(),pathToListen2);
                                 RecyclerView recyclerView = findViewById(R.id.playSongs);
                                 LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
                                 recyclerView.setLayoutManager(linearLayoutManager);
