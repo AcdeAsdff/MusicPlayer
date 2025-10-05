@@ -14,13 +14,20 @@ import static com.linearity.musicplayer.MainActivity.serverURL;
 import static com.linearity.musicplayer.PlayerService.getTimeStringFromMills;
 import static com.linearity.musicplayer.PlayerService.pathToListen2;
 import static com.linearity.musicplayer.PlayerService.songIndexes;
+import static com.linearity.musicplayer.PlayerFolderAdapter.fileNameFromAbsPath;
 
 import android.app.Activity;
 import android.app.Application;
 import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -55,6 +62,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -129,6 +137,77 @@ public class PlayerActivity extends Activity {
         }
         return textBuilder.toString();
     }
+
+    public void setupSongListContainer(){
+        initSongIndexes(getApplication(),pathToListen2);
+        RecyclerView recyclerView = findViewById(R.id.playSongs);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(linearLayoutManager);
+        recyclerView.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        PlaylistAdapter PlaylistAdapter = new PlaylistAdapter(pathToListen2);
+        recyclerView.setAdapter(PlaylistAdapter);
+    }
+    public void setupSearchBar(){
+        ScrollView searchedContainer = findViewById(R.id.searched_container);
+        RecyclerView searchedSongs = findViewById(R.id.searched_songs);
+        View collapseButton = findViewById(R.id.collapse);
+        EditText searchbar = findViewById(R.id.search_bar);
+
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        searchedSongs.setLayoutManager(linearLayoutManager);
+        searchedSongs.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
+        searchedSongs.setItemAnimator(new DefaultItemAnimator());
+        SearchedPlaylistAdapter adapter = new SearchedPlaylistAdapter(pathToListen2);
+        searchedSongs.setAdapter(adapter);
+        adapter.doSearch("");
+        searchbar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String text = String.valueOf(s);
+                if (Objects.equals("",text) || s == null){
+                    collapseButton.setRotation(0);
+                    ViewGroup.LayoutParams params = searchedContainer.getLayoutParams();
+                    params.height = 0;
+                    searchedContainer.setLayoutParams(params);
+
+                }else {
+                    collapseButton.setRotation(-90);
+
+                    ViewGroup.LayoutParams params = searchedContainer.getLayoutParams();
+                    params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                    searchedContainer.setLayoutParams(params);
+
+                    adapter.doSearch(text);
+                }
+            }
+        });
+        collapseButton.setOnClickListener(v -> {
+            float rotation = v.getRotation();
+            if (rotation == 0.f){
+                v.setRotation(-90);
+                ViewGroup.LayoutParams params = searchedContainer.getLayoutParams();
+                params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                searchedContainer.setLayoutParams(params);
+            }else {
+                v.setRotation(0);
+                ViewGroup.LayoutParams params = searchedContainer.getLayoutParams();
+                params.height = 0;
+                searchedContainer.setLayoutParams(params);
+            }
+        });
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         if (instance != null){
@@ -183,19 +262,12 @@ public class PlayerActivity extends Activity {
                         e.printStackTrace();
                     }
                 }
-
-                initSongIndexes(getApplication(),pathToListen2);
-                RecyclerView recyclerView = findViewById(R.id.playSongs);
-                LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-                recyclerView.setLayoutManager(linearLayoutManager);
-                recyclerView.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
-                recyclerView.setItemAnimator(new DefaultItemAnimator());
-                playlistAdapter PlaylistAdapter = new playlistAdapter(pathToListen2);
-                recyclerView.setAdapter(PlaylistAdapter);
-
+                setupSongListContainer();
+                setupSearchBar();
             }
         }
         else if (PlayerActivityFolderAbsPath != null){
+            //only for testing
             if (PlayerActivityFolderAbsPath.startsWith("http://") || PlayerActivityFolderAbsPath.startsWith("https://")){
                 serverURL = PlayerActivityFolderAbsPath;
                 remoteFilesFlag = true;
@@ -252,14 +324,8 @@ public class PlayerActivity extends Activity {
                             pathToListen2 = pathSet.toArray(new String[0]);
                             Log.d(LoggerTag, Arrays.toString(pathToListen2));
                             runOnUiThread(()->{
-                                initSongIndexes(getApplication(),pathToListen2);
-                                RecyclerView recyclerView = findViewById(R.id.playSongs);
-                                LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-                                recyclerView.setLayoutManager(linearLayoutManager);
-                                recyclerView.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
-                                recyclerView.setItemAnimator(new DefaultItemAnimator());
-                                playlistAdapter PlaylistAdapter = new playlistAdapter(pathToListen2);
-                                recyclerView.setAdapter(PlaylistAdapter);
+                                setupSongListContainer();
+                                setupSearchBar();
                             });
                         } else {
                             runOnUiThread(() ->Toast.makeText(PlayerActivity.this, R.string.path_not_found, Toast.LENGTH_SHORT).show());
@@ -275,6 +341,7 @@ public class PlayerActivity extends Activity {
                 remoteFilesFlag = false;
             }
         }
+
         titleTextView = findViewById(R.id.song_title);
         authorTextView = findViewById(R.id.song_author);
         drag2TimeTextView = findViewById(R.id.drag2time);
@@ -358,6 +425,7 @@ public class PlayerActivity extends Activity {
             ".flac",
             ".ogg",
     };
+
     private void executeFile(@NonNull File f, Collection<String> songSet, List<String> folders) {
         if (f.isDirectory()){
             if (folders.contains(f.getAbsolutePath())){
@@ -449,13 +517,11 @@ public class PlayerActivity extends Activity {
     }
 
     public void updateSelf() {
-
-        String title = playingSongPath.split("/")[playingSongPath.split("/").length - 1];
-//        Log.d(LoggerTag,"UpdatePlayerActivityInstance:Called");
-
         this.progress_total.setText(getTimeStringFromMills(mediaPlayer.getDuration()));
         this.progress_played.setText(getTimeStringFromMills(mediaPlayer.getCurrentPosition()));
         this.progressBar.setMax(mediaPlayer.getDuration());
+
+        String title = playingSongPath.split("/")[playingSongPath.split("/").length - 1];
         try {
             if (remoteFilesFlag){
                 title = URLDecoder.decode(title,"utf-8");
@@ -463,7 +529,8 @@ public class PlayerActivity extends Activity {
         }catch (Exception e){
             e.printStackTrace();
         }
-        this.titleTextView.setText(title);
+
+        this.titleTextView.setText(fileNameFromAbsPath(title));
         //maybe more than mp3 can set image for itself.
         try (MediaMetadataRetriever mmr = new MediaMetadataRetriever()){
 

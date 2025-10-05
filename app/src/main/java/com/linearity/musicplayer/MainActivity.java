@@ -98,6 +98,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.mainactivity);
         sharedPreferences_PathData = getSharedPreferences("PlayerPathData", MODE_PRIVATE);
+        folderList.clear();
         folderList.addAll(sharedPreferences_PathData.getAll().keySet());
 //        sharedPreferencesEditor_PathData = sharedPreferences_PathData.edit(); do it when U want to use
 
@@ -106,7 +107,7 @@ public class MainActivity extends Activity {
         recyclerView.setLayoutManager(linearLayoutManager);
         recyclerView.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
         recyclerView.setItemAnimator( new DefaultItemAnimator());
-        playerFolderAdapter playerFolderAdapter = new playerFolderAdapter(folderList);
+        PlayerFolderAdapter playerFolderAdapter = new PlayerFolderAdapter(folderList);
         recyclerView.setAdapter(playerFolderAdapter);
 
         Button addFolder = findViewById(R.id.addFolder);

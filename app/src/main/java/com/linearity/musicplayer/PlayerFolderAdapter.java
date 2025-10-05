@@ -29,7 +29,7 @@ import java.net.URLDecoder;
 import java.util.List;
 import java.util.Objects;
 
-public class playerFolderAdapter extends RecyclerView.Adapter<playerFolderAdapter.VH> {
+public class PlayerFolderAdapter extends RecyclerView.Adapter<PlayerFolderAdapter.VH> {
 
     public static class VH extends RecyclerView.ViewHolder{
         public final LinearLayout mainLayout;
@@ -44,7 +44,7 @@ public class playerFolderAdapter extends RecyclerView.Adapter<playerFolderAdapte
     }
 
     private final List<String> mDatas;
-    public playerFolderAdapter(List<String> data) {
+    public PlayerFolderAdapter(List<String> data) {
         this.mDatas = data;
     }
 

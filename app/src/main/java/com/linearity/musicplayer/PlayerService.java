@@ -10,7 +10,7 @@ import static com.linearity.musicplayer.MainActivity.mediaPlayer;
 import static com.linearity.musicplayer.MainActivity.playSong;
 import static com.linearity.musicplayer.MainActivity.playerChannelId;
 import static com.linearity.musicplayer.MainActivity.playingSongPath;
-import static com.linearity.musicplayer.playerFolderAdapter.fileNameFromAbsPath;
+import static com.linearity.musicplayer.PlayerFolderAdapter.fileNameFromAbsPath;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

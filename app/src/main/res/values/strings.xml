@@ -3,6 +3,7 @@
     <string name="title_activity_main">MainActivity</string>
     <string name="mainactivity_title">MusicPlayer</string>
     <string name="addFolder">+</string>
+    <string name="search">搜索</string>
     <string name="addFolder_Title">输入待加入的歌单文件夹</string>
     <string name="cancel">取消</string>
     <string name="confirm">确定</string>
@@ -11,5 +12,6 @@
     <string name="path_exists">路径已存在</string>
     <string name="delete_folder">是否删除文件夹?</string>
     <string name="permission_denied_alert">注意:禁用权限可能导致应用崩溃</string>
+    <string name="collapseicon"><![CDATA[<]]></string>
 
 </resources>

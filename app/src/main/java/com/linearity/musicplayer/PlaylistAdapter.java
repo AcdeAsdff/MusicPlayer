@@ -2,7 +2,7 @@ package com.linearity.musicplayer;
 
 import static com.linearity.musicplayer.MainActivity.instance;
 import static com.linearity.musicplayer.MainActivity.isProgressBarChanging;
-import static com.linearity.musicplayer.playerFolderAdapter.fileNameFromAbsPath;
+import static com.linearity.musicplayer.PlayerFolderAdapter.fileNameFromAbsPath;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 //import com.netease.cloudmusic.R;
 
 
-public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
+public class PlaylistAdapter extends RecyclerView.Adapter<PlaylistAdapter.VH> {
 
     public static class VH extends RecyclerView.ViewHolder{
         public final LinearLayout mainLayout;
@@ -31,7 +31,7 @@ public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
     }
 
     private final String[] mDatas;//songs abs path
-    public playlistAdapter(String[] data) {
+    public PlaylistAdapter(String[] data) {
         this.mDatas = data;
     }
 
@@ -61,8 +61,8 @@ public class playlistAdapter extends RecyclerView.Adapter<playlistAdapter.VH> {
 
     @NonNull
     @Override
-    public playlistAdapter.VH onCreateViewHolder(ViewGroup parent, int viewType) {
+    public PlaylistAdapter.VH onCreateViewHolder(ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.song_viewholder, parent, false);
-        return new playlistAdapter.VH(v);
+        return new PlaylistAdapter.VH(v);
     }
 }
