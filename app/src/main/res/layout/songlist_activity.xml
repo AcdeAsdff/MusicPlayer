@@ -90,18 +90,17 @@
         android:layout_alignParentBottom="true">
 
         <SeekBar
-            android:maxHeight="5dp"
-            android:minHeight="5dp"
             android:id="@+id/player_progressbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:layout_toEndOf="@id/progress_played"
             android:layout_toStartOf="@id/progress_total"
+            android:maxHeight="5dp"
+            android:minHeight="5dp"
+            android:progressDrawable="@drawable/bar_line"
             android:thumb="@drawable/shape_point_circular"
             android:translationZ="1dp"
-            android:visibility="visible"
-            android:progressDrawable="@drawable/bar_line"/>
+            android:visibility="visible" />
 
         <TextView
             android:maxLength="-1"

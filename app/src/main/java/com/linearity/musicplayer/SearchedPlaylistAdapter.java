@@ -1,9 +1,11 @@
 package com.linearity.musicplayer;
 
+import static com.linearity.musicplayer.Consts.LoggerTag;
 import static com.linearity.musicplayer.MainActivity.instance;
 import static com.linearity.musicplayer.MainActivity.isProgressBarChanging;
 import static com.linearity.musicplayer.PlayerFolderAdapter.fileNameFromAbsPath;
 
+import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -84,12 +86,11 @@ public class SearchedPlaylistAdapter extends RecyclerView.Adapter<SearchedPlayli
                 String s = mDataSource[i];
                 if (s.contains(searchText)){
                     songs.add(new Pair<>(i,s));
+//                    Log.d(LoggerTag,i + s);
                 }
             }
             mCurrentData.addAll(songs);
         }
-
-
         notifyDataSetChanged();
     }
 }
